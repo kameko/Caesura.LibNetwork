@@ -12,26 +12,27 @@ namespace Caesura.LibNetwork
     internal class InternalHttpServer : IDisposable
     {
         public const int DefaultIpAddress = 4988;
-        private TcpListener Listener;
+        private HttpListener Listener;
         
-        // TODO: events for GET, DELETE, POST and PUT here.
-        // Also an event that triggers for all of them.
+        // TODO: events for GET, DELETE, POST, PUT and PATCH here.
+        // Also an event that triggers for all of them. And make
+        // them async.
+        // Also an event for unrecognized request names. Not an
+        // outright error, but something to be informed of.
         
-        public InternalHttpServer(IPAddress ip, int port)
+        public InternalHttpServer(string address)
         {
-            port = port <= 0 ? DefaultIpAddress : port;
-            
-            Listener = new TcpListener(ip, port);
+            Listener = new HttpListener();
+            Listener.Prefixes.Add(address);
         }
         
-        public InternalHttpServer(string ip, int port) : this(IPAddress.Parse(ip), port)
+        public InternalHttpServer(IEnumerable<string> addresses)
         {
-            
-        }
-        
-        public InternalHttpServer(int port) : this(IPAddress.IPv6Loopback, port)
-        {
-            
+            Listener = new HttpListener();
+            foreach (var address in addresses)
+            {
+                Listener.Prefixes.Add(address);
+            }
         }
         
         public void Start()
