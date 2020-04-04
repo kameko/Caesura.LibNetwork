@@ -9,10 +9,10 @@ namespace Caesura.LibNetwork
     using System.Net.Http;
     using System.Net.Sockets;
     
-    internal class InternalHttpServer : IHttpServer
+    internal class InternalHttpServerHttpListener : IHttpServer
     {
         public const int DefaultIpAddress = 4988;
-        private TcpListener Listener;
+        private HttpListener Listener;
         
         // TODO: events for GET, DELETE, POST, PUT and PATCH here.
         // Also an event that triggers for all of them. And make
@@ -20,21 +20,27 @@ namespace Caesura.LibNetwork
         // Also an event for unrecognized request names. Not an
         // outright error, but something to be informed of.
         
-        public InternalHttpServer(IPAddress ip, int port)
+        private InternalHttpServerHttpListener()
         {
-            var nport = port <= 0 ? DefaultIpAddress : port;
+            if (!HttpListener.IsSupported)
+            {
+                throw new PlatformNotSupportedException("HttpListener is not supported on this platform.");
+            }
             
-            Listener = new TcpListener(ip, nport);
+            Listener = new HttpListener();
         }
         
-        public InternalHttpServer(string ip, int port) : this(IPAddress.Parse(ip), port)
+        public InternalHttpServerHttpListener(string address) : this()
         {
-            
+            Listener.Prefixes.Add(address);
         }
         
-        public InternalHttpServer(int port) : this(IPAddress.IPv6Loopback, port)
+        public InternalHttpServerHttpListener(IEnumerable<string> addresses) : this()
         {
-            
+            foreach (var address in addresses)
+            {
+                Listener.Prefixes.Add(address);
+            }
         }
         
         public void Start()
