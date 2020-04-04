@@ -11,7 +11,6 @@ namespace Caesura.LibNetwork
     
     internal class InternalHttpServer : IHttpServer
     {
-        public const int DefaultIpAddress = 4988;
         private TcpListener Listener;
         
         // TODO: events for GET, DELETE, POST, PUT and PATCH here.
@@ -22,7 +21,7 @@ namespace Caesura.LibNetwork
         
         public InternalHttpServer(IPAddress ip, int port)
         {
-            var nport = port <= 0 ? DefaultIpAddress : port;
+            var nport = port <= 0 ? HttpServers.DefaultIpAddress : port;
             
             Listener = new TcpListener(ip, nport);
         }
