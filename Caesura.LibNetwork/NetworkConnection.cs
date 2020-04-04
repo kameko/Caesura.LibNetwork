@@ -101,8 +101,8 @@ namespace Caesura.LibNetwork
                 }
                 catch (JsonException)
                 {
-                    // TODO: something
-                    throw new NotImplementedException();
+                    // TODO: invoke error callback. if it's null, rethrow instead.
+                    throw;
                 }
             }
             else
