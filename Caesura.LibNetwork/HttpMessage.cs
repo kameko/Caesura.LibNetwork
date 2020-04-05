@@ -15,10 +15,15 @@ namespace Caesura.LibNetwork
         public HttpHeaders Headers { get; set; }
         public HttpBody Body { get; set; }
         
-        public bool IsSuccessStatusCode => CheckIsSuccessStatusCode();
-        public bool HasHeaders => Headers.HasHeaders;
-        public bool HasBody => Body.HasBody;
+        public bool IsInformationalStatusCode => CheckStatusCodeInRange(100, 200);
+        public bool IsSuccessStatusCode       => CheckStatusCodeInRange(200, 300);
+        public bool IsRedirectionStatusCode   => CheckStatusCodeInRange(300, 400);
+        public bool IsClientErrorStatusCode   => CheckStatusCodeInRange(400, 500);
+        public bool IsServerErrorStatusCode   => CheckStatusCodeInRange(500, 600);
+        
         public int HeaderCount => Headers.Count;
+        public bool HasHeaders => Headers.HasHeaders;
+        public bool HasBody    => Body.HasBody;
         
         public HttpMessage()
         {
@@ -26,12 +31,10 @@ namespace Caesura.LibNetwork
             Body    = new HttpBody();
         }
         
-        private bool CheckIsSuccessStatusCode()
+        private bool CheckStatusCodeInRange(int begin, int end)
         {
             var code = (int)StatusCode;
-            // an HTTP status code is defined as being a
-            // success code if it is in the range of 2XX
-            return code >= 200 && code < 300;
+            return code >= begin && code < end;
         }
     }
     
