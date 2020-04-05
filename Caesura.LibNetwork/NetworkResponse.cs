@@ -12,6 +12,7 @@ namespace Caesura.LibNetwork
     {
         public HttpStatusCode StatusCode { get; set; }
         public bool IsSuccessStatusCode { get; set; }
+        public HttpRequest Request { get; set; }
         
         public NetworkResponse()
         {
@@ -45,7 +46,5 @@ namespace Caesura.LibNetwork
         {
             Entity = entity;
         }
-        
-        
     }
 }
