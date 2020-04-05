@@ -50,16 +50,6 @@ namespace Caesura.LibNetwork
             return new List<HttpHeader>(Headers);
         }
         
-        private bool CheckIsValid()
-        {
-            if (is_valid == TriStateValidation.NotSet)
-            {
-                var valid = Headers.Any(x => x.IsValid);
-                is_valid  = valid ? TriStateValidation.Valid : TriStateValidation.Invalid;
-            }
-            return is_valid == TriStateValidation.Valid;
-        }
-        
         public HttpHeader this[int index]  
         {  
             get { return Headers[index]; }  
@@ -74,6 +64,16 @@ namespace Caesura.LibNetwork
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();
+        }
+        
+        private bool CheckIsValid()
+        {
+            if (is_valid == TriStateValidation.NotSet)
+            {
+                var valid = Headers.All(x => x.IsValid);
+                is_valid  = valid ? TriStateValidation.Valid : TriStateValidation.Invalid;
+            }
+            return is_valid == TriStateValidation.Valid;
         }
         
         private enum TriStateValidation
