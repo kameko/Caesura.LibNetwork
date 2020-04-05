@@ -10,10 +10,14 @@ namespace Caesura.LibNetwork
     
     public class LibNetworkConfig
     {
+        // HTTP client config
         public HttpMessageHandler? HttpHandler { get; set; }
         public HttpCompletionOption CompletionOption { get; set; }
         public bool DisposeHttpHandler { get; set; }
         public JsonSerializerOptions JsonOptions { get; set; }
+        // HTTP server config
+        public int MaxConnections { get; set; }
+        public int ReadByteBufferSize { get; set; }
         
         public LibNetworkConfig()
         {
@@ -22,8 +26,11 @@ namespace Caesura.LibNetwork
             DisposeHttpHandler = true;
             JsonOptions        = new JsonSerializerOptions()
             {
-                WriteIndented = true,
+                WriteIndented  = true,
             };
+            
+            MaxConnections     = 20;
+            ReadByteBufferSize = 1024;
         }
         
         public static LibNetworkConfig GetDefault()
