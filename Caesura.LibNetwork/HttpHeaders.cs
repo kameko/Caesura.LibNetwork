@@ -13,6 +13,8 @@ namespace Caesura.LibNetwork
         private List<HttpHeader> Headers;
         
         public bool IsValid => CheckIsValid();
+        public int Count => Headers.Count;
+        public bool HasHeaders => Headers.Count > 0;
         
         public HttpHeaders()
         {

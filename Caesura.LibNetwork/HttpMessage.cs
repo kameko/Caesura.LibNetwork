@@ -16,7 +16,9 @@ namespace Caesura.LibNetwork
         public HttpBody Body { get; set; }
         
         public bool IsSuccessStatusCode => CheckIsSuccessStatusCode();
+        public bool HasHeaders => Headers.HasHeaders;
         public bool HasBody => Body.HasBody;
+        public int HeaderCount => Headers.Count;
         
         public HttpMessage()
         {
@@ -27,7 +29,9 @@ namespace Caesura.LibNetwork
         private bool CheckIsSuccessStatusCode()
         {
             var code = (int)StatusCode;
-            return code > 200 && code < 299;
+            // an HTTP status code is defined as being a
+            // success code if it is in the range of 2XX
+            return code >= 200 && code < 300;
         }
     }
     
