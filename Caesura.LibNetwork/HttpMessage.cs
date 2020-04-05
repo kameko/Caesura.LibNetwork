@@ -16,6 +16,7 @@ namespace Caesura.LibNetwork
         public HttpBody Body { get; set; }
         
         public bool IsSuccessStatusCode => CheckIsSuccessStatusCode();
+        public bool HasBody => Body.HasBody;
         
         public HttpMessage()
         {

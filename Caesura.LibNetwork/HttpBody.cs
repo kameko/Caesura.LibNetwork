@@ -20,7 +20,16 @@ namespace Caesura.LibNetwork
         
         public HttpBody(string body)
         {
-            raw_body = body;
+            raw_body = Sanitize(body);
+        }
+        
+        private string Sanitize(string body)
+        {
+            if (body.StartsWith("\r\n"))
+            {
+                body = body.Substring(2);
+            }
+            return body;
         }
         
         public override string ToString()
