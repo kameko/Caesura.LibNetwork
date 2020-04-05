@@ -63,16 +63,16 @@ namespace Caesura.LibNetwork
                 return HttpHeaderValidation.NoColon;
             }
             
-            var split = header.Split(':', 2);
-            name = split[0];
-            body = split[1].TrimStart(); // trim whitespace in "Head: Body" header format.
+            var split = SplitHeaderAndSanitize(header);
+            name = split.Name;
+            body = split.Body;
             
-            if (name.Any(Char.IsWhiteSpace))
+            if (ContainsWhitespace(name))
             {
                 return HttpHeaderValidation.NameContainsWhitespace;
             }
             
-            if (CheckForCRLF(body))
+            if (ContainsCRLF(body))
             {
                 body = RemoveCRLF(body);
             }
@@ -83,7 +83,17 @@ namespace Caesura.LibNetwork
             
             return HttpHeaderValidation.Valid;
             
-            bool CheckForCRLF(string x) => x.EndsWith("\r\n");
+            // Local functions.
+            
+            (string Name, string Body) SplitHeaderAndSanitize(string x)
+            {
+                var split = header.Split(':', 2);
+                var name = split[0];
+                var body = split[1].TrimStart();
+                return (name, body);
+            }
+            bool ContainsWhitespace(string x) => x.Any(char.IsWhiteSpace);
+            bool ContainsCRLF(string x) => x.EndsWith("\r\n");
             string RemoveCRLF(string x) => x.Remove(x.Length - 2);
         }
         
