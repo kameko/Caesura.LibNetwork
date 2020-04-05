@@ -10,9 +10,17 @@ namespace Caesura.LibNetwork
     {
         internal string raw_body;
         
+        public string Body => raw_body;
+        public bool HasBody => !(string.IsNullOrEmpty(raw_body) || string.IsNullOrWhiteSpace(raw_body));
+        
         public HttpBody()
         {
             raw_body = string.Empty;
+        }
+        
+        public HttpBody(string body)
+        {
+            raw_body = body;
         }
         
         public override string ToString()
