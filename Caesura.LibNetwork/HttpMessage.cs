@@ -8,17 +8,19 @@ namespace Caesura.LibNetwork
     using System.Net;
     using System.Net.Http;
     
-    public class HttpResponse
+    public class HttpMessage
     {
         public HttpStatusCode StatusCode { get; set; }
-        public bool IsSuccessStatusCode => CheckIsSuccessStatusCode();
         public HttpRequest Request { get; set; }
         public HttpHeaders Headers { get; set; }
-        public HttpBody? Body { get; set; }
+        public HttpBody Body { get; set; }
         
-        public HttpResponse()
+        public bool IsSuccessStatusCode => CheckIsSuccessStatusCode();
+        
+        public HttpMessage()
         {
             Headers = new HttpHeaders();
+            Body    = new HttpBody();
         }
         
         private bool CheckIsSuccessStatusCode()
@@ -28,7 +30,7 @@ namespace Caesura.LibNetwork
         }
     }
     
-    public class HttpResponse<T> : HttpResponse
+    public class HttpMessage<T> : HttpMessage
     {
         private bool is_entity_set;
         private T _entity;
@@ -44,13 +46,13 @@ namespace Caesura.LibNetwork
         }
         public bool HasEntity => is_entity_set;
         
-        public HttpResponse() : base()
+        public HttpMessage() : base()
         {
             is_entity_set = false;
             _entity       = default!;
         }
         
-        public HttpResponse(T entity) : this()
+        public HttpMessage(T entity) : this()
         {
             Entity = entity;
         }
