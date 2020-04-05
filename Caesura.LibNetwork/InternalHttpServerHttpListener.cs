@@ -9,16 +9,12 @@ namespace Caesura.LibNetwork
     using System.Net.Http;
     using System.Net.Sockets;
     
+    // https://docs.microsoft.com/en-us/dotnet/api/system.net.httplistener?redirectedfrom=MSDN&view=netcore-3.0 
+    
     internal class InternalHttpServerHttpListener : IHttpServer
     {
         public const int DefaultIpAddress = 4988;
         private HttpListener Listener;
-        
-        // TODO: events for GET, DELETE, POST, PUT and PATCH here.
-        // Also an event that triggers for all of them. And make
-        // them async.
-        // Also an event for unrecognized request names. Not an
-        // outright error, but something to be informed of.
         
         private InternalHttpServerHttpListener()
         {
@@ -41,6 +37,11 @@ namespace Caesura.LibNetwork
             {
                 Listener.Prefixes.Add(address);
             }
+        }
+        
+        public Task StartAsync()
+        {
+            throw new NotImplementedException();
         }
         
         public void Start()
