@@ -9,8 +9,7 @@ namespace Caesura.LibNetwork
     
     public class HttpHeaders : IEnumerable<HttpHeader>
     {
-        private bool is_valid_set;
-        private bool is_valid;
+        private TriStateValidation is_valid;
         private List<HttpHeader> Headers;
         
         public bool IsValid => CheckIsValid();
@@ -28,7 +27,7 @@ namespace Caesura.LibNetwork
         public void Add(HttpHeader header)
         {
             Headers.Add(header);
-            is_valid_set = false;
+            is_valid = TriStateValidation.NotSet;
         }
         
         public IEnumerable<HttpHeader> GetAllValid()
@@ -53,14 +52,12 @@ namespace Caesura.LibNetwork
         
         private bool CheckIsValid()
         {
-            if (is_valid_set)
+            if (is_valid == TriStateValidation.NotSet)
             {
-                return is_valid;
+                var valid = Headers.Any(x => x.IsValid);
+                is_valid  = valid ? TriStateValidation.Valid : TriStateValidation.Invalid;
             }
-            
-            is_valid     = Headers.Any(x => x.IsValid);
-            is_valid_set = true;
-            return is_valid;
+            return is_valid == TriStateValidation.Valid;
         }
         
         public HttpHeader this[int index]  
@@ -77,6 +74,13 @@ namespace Caesura.LibNetwork
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();
+        }
+        
+        private enum TriStateValidation
+        {
+            NotSet  = 0,
+            Valid   = 1,
+            Invalid = 2,
         }
     }
 }
