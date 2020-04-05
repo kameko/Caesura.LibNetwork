@@ -11,8 +11,7 @@ namespace Caesura.LibNetwork
     public class HttpResponse
     {
         public HttpStatusCode StatusCode { get; set; }
-        // TODO: getter that decides for itself if StatusCode is a success
-        public bool IsSuccessStatusCode { get; set; }
+        public bool IsSuccessStatusCode => CheckIsSuccessStatusCode();
         public HttpRequest Request { get; set; }
         public HttpHeaders Headers { get; set; }
         public HttpBody? Body { get; set; }
@@ -20,6 +19,12 @@ namespace Caesura.LibNetwork
         public HttpResponse()
         {
             Headers = new HttpHeaders();
+        }
+        
+        private bool CheckIsSuccessStatusCode()
+        {
+            var code = (int)StatusCode;
+            return code > 200 && code < 299;
         }
     }
     

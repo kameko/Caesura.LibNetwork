@@ -79,15 +79,13 @@ namespace Caesura.LibNetwork
             {
                 return new HttpResponse<T>()
                 {
-                    StatusCode          = HttpStatusCode.ServiceUnavailable,
-                    IsSuccessStatusCode = false,
+                    StatusCode = HttpStatusCode.ServiceUnavailable,
                 };
             }
             
             var result = new HttpResponse<T>()
             {
-                StatusCode          = rsp.StatusCode,
-                IsSuccessStatusCode = rsp.IsSuccessStatusCode,
+                StatusCode = rsp.StatusCode,
             };
             
             if (rsp.IsSuccessStatusCode)
