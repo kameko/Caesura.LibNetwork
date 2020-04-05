@@ -7,7 +7,7 @@ namespace Caesura.LibNetwork
     
     internal interface IHttpServer : IDisposable
     {
-        
+        Task StartAsync();
         void Start();
         void Stop();
     }
