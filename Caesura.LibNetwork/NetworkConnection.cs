@@ -69,7 +69,7 @@ namespace Caesura.LibNetwork
         /// <param name="uri"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public async Task<NetworkResponse<T>> Get<T>(Uri uri)
+        public async Task<HttpResponse<T>> Get<T>(Uri uri)
         {
             TestObjectValidity();
             
@@ -77,14 +77,14 @@ namespace Caesura.LibNetwork
             
             if (rsp is null)
             {
-                return new NetworkResponse<T>()
+                return new HttpResponse<T>()
                 {
                     StatusCode          = HttpStatusCode.ServiceUnavailable,
                     IsSuccessStatusCode = false,
                 };
             }
             
-            var result = new NetworkResponse<T>()
+            var result = new HttpResponse<T>()
             {
                 StatusCode          = rsp.StatusCode,
                 IsSuccessStatusCode = rsp.IsSuccessStatusCode,
@@ -120,13 +120,13 @@ namespace Caesura.LibNetwork
         /// <param name="uri"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public Task<NetworkResponse> Delete<T>(Uri uri)
+        public Task<HttpResponse> Delete<T>(Uri uri)
         {
             TestObjectValidity();
             throw new NotImplementedException();
         }
         
-        public Task<NetworkResponse> Patch<T, V>(Uri uri, T item_to_modify, string field_name_to_modify, V set_field_to_item)
+        public Task<HttpResponse> Patch<T, V>(Uri uri, T item_to_modify, string field_name_to_modify, V set_field_to_item)
         {
             TestObjectValidity();
             throw new NotImplementedException();
@@ -140,7 +140,7 @@ namespace Caesura.LibNetwork
         /// <param name="item"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public Task<NetworkResponse> Put<T>(Uri uri, T item)
+        public Task<HttpResponse> Put<T>(Uri uri, T item)
         {
             TestObjectValidity();
             throw new NotImplementedException();
@@ -154,7 +154,7 @@ namespace Caesura.LibNetwork
         /// <param name="item"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public Task<NetworkResponse> Post<T>(Uri uri, T item)
+        public Task<HttpResponse> Post<T>(Uri uri, T item)
         {
             TestObjectValidity();
             throw new NotImplementedException();
@@ -166,7 +166,7 @@ namespace Caesura.LibNetwork
         /// <param name="uri"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public Task<NetworkResponse<T>> Read<T>(Uri uri) => Get<T>(uri);
+        public Task<HttpResponse<T>> Read<T>(Uri uri) => Get<T>(uri);
         
         /// <summary>
         /// Alias for Put(uri, item)
@@ -175,7 +175,7 @@ namespace Caesura.LibNetwork
         /// <param name="item"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public Task<NetworkResponse> Write<T>(Uri uri, T item) => Put(uri, item);
+        public Task<HttpResponse> Write<T>(Uri uri, T item) => Put(uri, item);
         
         private void TestObjectValidity()
         {
