@@ -11,8 +11,10 @@ namespace Caesura.LibNetwork
     public class NetworkResponse
     {
         public HttpStatusCode StatusCode { get; set; }
+        // TODO: getter that decides for itself if StatusCode is a success
         public bool IsSuccessStatusCode { get; set; }
         public HttpRequest Request { get; set; }
+        public HttpBody? Body { get; set; }
         
         public NetworkResponse()
         {
