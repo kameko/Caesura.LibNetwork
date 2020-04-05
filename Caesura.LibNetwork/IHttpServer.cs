@@ -5,7 +5,7 @@ namespace Caesura.LibNetwork
     using System.Collections.Generic;
     using System.Threading.Tasks;
     
-    internal interface IHttpServer : IDisposable
+    public interface IHttpServer : IDisposable
     {
         Task StartAsync();
         void Start();

@@ -6,7 +6,7 @@ namespace Caesura.LibNetwork
     using System.Linq;
     using System.Threading.Tasks;
     
-    internal static class HttpServers
+    public static class HttpServers
     {
         public const int DefaultIpAddress = 4988;
         

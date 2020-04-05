@@ -18,14 +18,14 @@ namespace Caesura.LibNetwork
     // Also something to handle exceptions, both critical and
     // non-critical (network errors).
     
-    internal class InternalHttpServer : IHttpServer
+    public class HttpServer : IHttpServer
     {
         private LibNetworkConfig Config;
         private CancellationTokenSource? Canceller;
         private TcpListener Listener;
         private List<TcpSession> Sessions;
         
-        public InternalHttpServer(LibNetworkConfig config, IPAddress ip, int port)
+        public HttpServer(LibNetworkConfig config, IPAddress ip, int port)
         {
             var nport = port <= 0 ? HttpServers.DefaultIpAddress : port;
             Config    = config;
@@ -33,12 +33,12 @@ namespace Caesura.LibNetwork
             Sessions  = new List<TcpSession>();
         }
         
-        public InternalHttpServer(LibNetworkConfig config, string ip, int port) : this(config, IPAddress.Parse(ip), port)
+        public HttpServer(LibNetworkConfig config, string ip, int port) : this(config, IPAddress.Parse(ip), port)
         {
             
         }
         
-        public InternalHttpServer(LibNetworkConfig config, int port) : this(config, IPAddress.IPv6Loopback, port)
+        public HttpServer(LibNetworkConfig config, int port) : this(config, IPAddress.IPv6Loopback, port)
         {
             
         }
