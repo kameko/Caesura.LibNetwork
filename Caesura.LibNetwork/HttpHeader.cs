@@ -21,7 +21,7 @@ namespace Caesura.LibNetwork
         public HttpHeader(string header)
         {
             whole_header = header;
-            is_valid = Validate(header, out header_name, out header_body);
+            is_valid = TryValidate(header, out header_name, out header_body);
         }
         
         public HttpHeader(string name, string body) : this($"{name}: {body}\r\n")
@@ -39,29 +39,61 @@ namespace Caesura.LibNetwork
             return header_name.Equals(name, StringComparison.InvariantCultureIgnoreCase);
         }
         
-        public static bool Validate(string header, out string name, out string body)
+        public static bool TryValidate(string header, out string name, out string body)
+        {
+            var result = Validate(header, out name, out body);
+            return result == HttpHeaderValidation.Valid;
+        }
+        
+        public static void ValidateOrThrow(string header, out string name, out string body)
+        {
+            var result = Validate(header, out name, out body);
+            if (result != HttpHeaderValidation.Valid)
+            {
+                throw new InvalidHttpHeaderException(result);
+            }
+        }
+        
+        public static HttpHeaderValidation Validate(string header, out string name, out string body)
         {
             if (!header.Contains(':'))
             {
                 name = string.Empty;
                 body = string.Empty;
-                return false;
+                return HttpHeaderValidation.NoColon;
             }
             
             var split = header.Split(':', 2);
             name = split[0];
-            body = split[1];
+            body = split[1].TrimStart(); // trim whitespace in "Head: Body" header format.
             
             if (name.Any(Char.IsWhiteSpace))
             {
-                return false; // invalid, name can only have dashes.
-            }
-            if (!header.EndsWith("\r\n"))
-            {
-                return false; // header must end in <CR><LF>
+                return HttpHeaderValidation.NameContainsWhitespace;
             }
             
-            return true;
+            if (CheckForCRLF(body))
+            {
+                body = RemoveCRLF(body);
+            }
+            else
+            {
+                return HttpHeaderValidation.BodyDoesNotEndInCRLF;
+            }
+            
+            return HttpHeaderValidation.Valid;
+            
+            bool CheckForCRLF(string x) => x.EndsWith("\r\n");
+            string RemoveCRLF(string x) => x.Remove(x.Length - 2);
+        }
+        
+        public enum HttpHeaderValidation
+        {
+            Unkown                  = 0,
+            Valid                   = 1,
+            NoColon                 = 2,
+            NameContainsWhitespace  = 3,
+            BodyDoesNotEndInCRLF    = 4,
         }
     }
 }
