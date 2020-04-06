@@ -21,7 +21,7 @@ namespace Caesura.LibNetwork
         {
             if (!_session.Active)
             {
-                throw new InvalidOperationException("Session is no longer active.");
+                throw new TcpSessionNotActiveException("Session is no longer active.");
             }
             
             var bytes  = response.ToBytes();

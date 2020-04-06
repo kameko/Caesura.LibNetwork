@@ -107,10 +107,7 @@ namespace Caesura.LibNetwork
             ValidateStart();
             
             Listener.Start();
-            await Task.WhenAll(
-                ConnectionWaiter(),
-                ConnectionTimeoutDetector()
-            );
+            await GetAllSubsystemTasks();
         }
         
         public void Start()
@@ -118,10 +115,7 @@ namespace Caesura.LibNetwork
             ValidateStart();
             
             Listener.Start();
-            var task = Task.WhenAll(
-                ConnectionWaiter(),
-                ConnectionTimeoutDetector()
-            );
+            var task = GetAllSubsystemTasks();
             
             while (!Canceller!.IsCancellationRequested)
             {
@@ -148,11 +142,19 @@ namespace Caesura.LibNetwork
             Listener.Stop();
             Canceller.Cancel();
             
-            var sessions = new List<KeyValuePair<Guid, TcpSession>>(Sessions);
-            foreach (var session_kvp in sessions)
+            foreach (var session_kvp in Sessions)
             {
                 session_kvp.Value.Client.Close();
             }
+        }
+        
+        private Task GetAllSubsystemTasks()
+        {
+            return Task.WhenAll(
+                ConnectionWaiter(),
+                SessionInactiveDetector(),
+                SessionHandler()
+            );
         }
         
         private void ValidateStart()
@@ -176,29 +178,11 @@ namespace Caesura.LibNetwork
             }
         }
         
-        private async Task ConnectionTimeoutDetector()
-        {
-            var cancelled = Canceller?.IsCancellationRequested ?? true;
-            while (!cancelled)
-            {
-                await Task.Delay(1_000);
-                
-                var sessions = new List<KeyValuePair<Guid, TcpSession>>(Sessions);
-                foreach (var session_kvp in sessions)
-                {
-                    session_kvp.Value.TickDown();
-                    if (!session_kvp.Value.Active)
-                    {
-                        Sessions.Remove(session_kvp.Key, out _);
-                    }
-                }
-            }
-        }
-        
         private async Task ConnectionWaiter()
         {
-            var cancelled = Canceller?.IsCancellationRequested ?? true;
-            while (!cancelled)
+            ValidateRuntime();
+            var token = Canceller!.Token;
+            while (!token.IsCancellationRequested)
             {
                 if (Sessions.Count > Config.MaxConnections)
                 {
@@ -206,59 +190,89 @@ namespace Caesura.LibNetwork
                     continue;
                 }
                 
-                TcpSession? session = null;
                 try
                 {
                     var client = Listener.AcceptTcpClient();
-                    session = new TcpSession(client, Config.ConnectionTimeoutTicks);
+                    var session = new TcpSession(client, Config.ConnectionTimeoutTicks);
                     
                     Sessions.GetOrAdd(session.Id, session);
-                    await HandleSession(session);
                 }
                 catch (SocketException se)
                 {
-                    OnAnyException();
                     OnSocketException(se.ErrorCode);
                 }
                 catch (Exception e)
                 {
-                    OnAnyException();
                     OnUnhandledException(e);
-                }
-                
-                void OnAnyException()
-                {
-                    if (!(session is null))
-                    {
-                        Sessions.Remove(session.Id, out _);
-                        session.Close();
-                    }
+                    throw;
                 }
             }
         }
         
-        // TODO: we need a way to handle back-and-forth communication
-        // without killing the client after every request.
-        // I think we should run HandleSession in a loop in it's own
-        // task and maybe remove the call to it in ConnectionWaiter().
+        private async Task SessionInactiveDetector()
+        {
+            ValidateRuntime();
+            var token = Canceller!.Token;
+            while (!token.IsCancellationRequested)
+            {
+                foreach (var session_kvp in Sessions)
+                {
+                    if (!session_kvp.Value.Active)
+                    {
+                        Sessions.Remove(session_kvp.Key, out _);
+                    }
+                }
+                
+                await Task.Delay(1_000, token);
+            }
+        }
+        
+        private async Task SessionHandler()
+        {
+            ValidateRuntime();
+            var token = Canceller!.Token;
+            while (!token.IsCancellationRequested)
+            {
+                foreach (var session_kvp in Sessions)
+                {
+                    if (session_kvp.Value.Client.GetStream().DataAvailable)
+                    {
+                        session_kvp.Value.ResetTicks();
+                        await HandleSessionSafely(session_kvp.Value);
+                    }
+                    else
+                    {
+                        session_kvp.Value.TickDown();
+                    }
+                }
+                
+                await Task.Delay(1);
+            }
+        }
         
         private async Task HandleSessionSafely(TcpSession session)
         {
             try
             {
+                if (!session.Active)
+                {
+                    throw new TcpSessionNotActiveException("Session is no longer active.");
+                }
+                
                 await HandleSession(session);
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 Sessions.Remove(session.Id, out _);
                 session.Close();
+                OnUnhandledException(e);
+                throw;
             }
         }
         
         private async Task HandleSession(TcpSession session)
         {
             ValidateRuntime();
-            session.ResetTicks();
             
             var token            = Canceller!.Token;
             var stream           = session.Client.GetStream();

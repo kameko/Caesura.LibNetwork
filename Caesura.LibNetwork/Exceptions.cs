@@ -16,6 +16,15 @@ namespace Caesura.LibNetwork
     */
     
     [Serializable]
+    public class TcpSessionNotActiveException : Exception
+    {
+        public TcpSessionNotActiveException() { }
+        public TcpSessionNotActiveException(string message) : base(message) { }
+        public TcpSessionNotActiveException(string message, Exception inner) : base(message, inner) { }
+        protected TcpSessionNotActiveException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+    }
+    
+    [Serializable]
     public class UnreliableConnectionException : Exception
     {
         public UnreliableConnectionException() { }
