@@ -168,7 +168,6 @@ namespace Caesura.LibNetwork
         {
             var request_str = ReadLine(stream, sb, Config.HeaderCharReadLimit);
             var request     = new HttpRequest(request_str);
-            
             return request;
         }
         
@@ -199,7 +198,7 @@ namespace Caesura.LibNetwork
             
             char current_char = '\0';
             int current_int   = 0;
-            while (current_int > -1)
+            while (current_int > -1 && current_int < Config.BodyCharReadLimit)
             {
                 current_int  = stream.ReadByte();
                 current_char = Convert.ToChar(current_int);
