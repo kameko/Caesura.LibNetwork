@@ -3,6 +3,10 @@ namespace Caesura.LibNetwork
 {
     using System;
     
+    // TODO: do the same thing here as with HttpResponse.
+    // take HttpRequest out of HttpMessage and put a
+    // HttpMessage inside of here.
+    
     public class HttpRequest
     {
         public HttpRequestKind Kind { get; private set; }
