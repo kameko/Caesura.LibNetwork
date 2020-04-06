@@ -5,6 +5,7 @@ namespace Caesura.LibNetwork
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
+    using System.Text.Json;
     
     public class HttpBody
     {
@@ -24,6 +25,11 @@ namespace Caesura.LibNetwork
             raw_body = Sanitize(body);
         }
         
+        public HttpBodyDeserializationResult Deserialize<T>(out T item)
+        {
+            throw new NotImplementedException();
+        }
+        
         private string Sanitize(string body)
         {
             if (body.StartsWith("\r\n"))
@@ -36,6 +42,12 @@ namespace Caesura.LibNetwork
         public override string ToString()
         {
             return raw_body;
+        }
+        
+        public enum HttpBodyDeserializationResult
+        {
+            Unknown = 0,
+            Ok      = 1,
         }
     }
 }
