@@ -31,9 +31,9 @@ namespace Caesura.LibNetwork
         {
             return HttpVersionUtils.ConvertToString(Version)
                 + " "
-                + ((int)StatusCode).ToString()
+                + HttpStatusCodeUtils.ConvertToNumberString(StatusCode)
                 + " "
-                + HttpStatusCodeUtils.ConvertToString(StatusCode)
+                + HttpStatusCodeUtils.ConvertToFormattedString(StatusCode)
                 + "\r\n"
                 + Message.ToHttp();
         }

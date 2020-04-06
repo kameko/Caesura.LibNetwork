@@ -88,7 +88,17 @@ namespace Caesura.LibNetwork
         public static bool IsClientErrorStatusCode(HttpStatusCode code)   => CheckStatusCodeInRange(code, 400, 500);
         public static bool IsServerErrorStatusCode(HttpStatusCode code)   => CheckStatusCodeInRange(code, 500, 600);
         
-        public static string ConvertToString(HttpStatusCode code)
+        public static int ConvertToNumber(HttpStatusCode code)
+        {
+            return (int)code;
+        }
+        
+        public static string ConvertToNumberString(HttpStatusCode code)
+        {
+            return ConvertToNumber(code).ToString();
+        }
+        
+        public static string ConvertToFormattedString(HttpStatusCode code)
         {
             if (code == HttpStatusCode.OK)
             {
