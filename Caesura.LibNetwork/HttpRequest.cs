@@ -8,9 +8,9 @@ namespace Caesura.LibNetwork
     
     public class HttpRequest
     {
-        public HttpRequestKind Kind { get; set; }
-        public Uri Resource { get; set; }
-        public HttpVersion Version { get; set; }
+        public HttpRequestKind Kind { get; private set; }
+        public Uri Resource { get; private set; }
+        public HttpVersion Version { get; private set; }
         public bool IsValid { get; private set; }
         
         public HttpRequest()
@@ -87,13 +87,13 @@ namespace Caesura.LibNetwork
             return HttpRequestValidation.Valid;
         }
         
-        private static HttpRequestKind ParseHttpRequestKind(string request)
+        public static HttpRequestKind ParseHttpRequestKind(string request)
         {
             var success = Enum.TryParse<HttpRequestKind>(request, true, out var result);
             return success ? result : HttpRequestKind.Unknown;
         }
         
-        private static HttpVersion ParseHttpVersion(string ver)
+        public static HttpVersion ParseHttpVersion(string ver)
         {
             return ver.ToUpper() switch
             {

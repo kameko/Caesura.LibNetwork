@@ -10,10 +10,10 @@ namespace Caesura.LibNetwork
     
     public class HttpMessage
     {
-        public HttpStatusCode StatusCode { get; set; }
-        public HttpRequest Request { get; set; }
-        public HttpHeaders Headers { get; set; }
-        public HttpBody Body { get; set; }
+        public HttpStatusCode StatusCode { get; private set; }
+        public HttpRequest Request { get; private set; }
+        public HttpHeaders Headers { get; private set; }
+        public HttpBody Body { get; private set; }
         
         public bool IsInformationalStatusCode => CheckStatusCodeInRange(100, 200);
         public bool IsSuccessStatusCode       => CheckStatusCodeInRange(200, 300);
@@ -83,5 +83,21 @@ namespace Caesura.LibNetwork
         {
             Entity = entity;
         }
+        
+        public HttpMessage(HttpStatusCode status, HttpRequest request, HttpHeaders headers, HttpBody body, T entity)
+            : base(status, request, headers, body)
+        {
+            _entity = default!;
+            Entity  = entity;
+        }
+        
+        public HttpMessage(HttpRequest request, HttpHeaders headers, HttpBody body, T entity)
+            : this(HttpStatusCode.OK, request, headers, body, entity) { }
+            
+        public HttpMessage(HttpStatusCode status, HttpRequest request, HttpHeaders headers, T entity)
+            : this(status, request, headers, new HttpBody(), entity) { }
+            
+        public HttpMessage(HttpRequest request, HttpHeaders headers, T entity)
+            : this(HttpStatusCode.OK, request, headers, new HttpBody(), entity) { }
     }
 }
