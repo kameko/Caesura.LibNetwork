@@ -2,9 +2,6 @@
 namespace Caesura.LibNetwork
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
     
     public class HttpResponse
     {
@@ -12,11 +9,11 @@ namespace Caesura.LibNetwork
         public HttpVersion Version { get; set; }
         public HttpMessage Message { get; set; }
         
-        public bool IsInformationalStatusCode => CheckStatusCodeInRange(100, 200);
-        public bool IsSuccessStatusCode       => CheckStatusCodeInRange(200, 300);
-        public bool IsRedirectionStatusCode   => CheckStatusCodeInRange(300, 400);
-        public bool IsClientErrorStatusCode   => CheckStatusCodeInRange(400, 500);
-        public bool IsServerErrorStatusCode   => CheckStatusCodeInRange(500, 600);
+        public bool IsInformationalStatusCode => HttpStatusCodeUtils.CheckStatusCodeInRange(StatusCode, 100, 200);
+        public bool IsSuccessStatusCode       => HttpStatusCodeUtils.CheckStatusCodeInRange(StatusCode, 200, 300);
+        public bool IsRedirectionStatusCode   => HttpStatusCodeUtils.CheckStatusCodeInRange(StatusCode, 300, 400);
+        public bool IsClientErrorStatusCode   => HttpStatusCodeUtils.CheckStatusCodeInRange(StatusCode, 400, 500);
+        public bool IsServerErrorStatusCode   => HttpStatusCodeUtils.CheckStatusCodeInRange(StatusCode, 500, 600);
         
         public HttpResponse()
         {
@@ -43,10 +40,5 @@ namespace Caesura.LibNetwork
         
         // TODO: parsing from string
         
-        private bool CheckStatusCodeInRange(int begin, int end)
-        {
-            var code = (int)StatusCode;
-            return code >= begin && code < end;
-        }
     }
 }

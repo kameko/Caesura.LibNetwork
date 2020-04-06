@@ -70,4 +70,19 @@ namespace Caesura.LibNetwork
         GatewayTimeout                  = 504,
         HttpVersionNotSupported         = 505,
     }
+    
+    public static class HttpStatusCodeUtils
+    {
+        public static bool CheckStatusCodeInRange(HttpStatusCode status_code, int begin, int end)
+        {
+            var code = (int)status_code;
+            return code >= begin && code < end;
+        }
+        
+        public static bool IsInformationalStatusCode(HttpStatusCode code) => CheckStatusCodeInRange(code, 100, 200);
+        public static bool IsSuccessStatusCode(HttpStatusCode code)       => CheckStatusCodeInRange(code, 200, 300);
+        public static bool IsRedirectionStatusCode(HttpStatusCode code)   => CheckStatusCodeInRange(code, 300, 400);
+        public static bool IsClientErrorStatusCode(HttpStatusCode code)   => CheckStatusCodeInRange(code, 400, 500);
+        public static bool IsServerErrorStatusCode(HttpStatusCode code)   => CheckStatusCodeInRange(code, 500, 600);
+    }
 }
