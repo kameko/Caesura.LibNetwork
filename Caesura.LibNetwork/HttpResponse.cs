@@ -5,9 +5,9 @@ namespace Caesura.LibNetwork
     
     public class HttpResponse
     {
-        public HttpStatusCode StatusCode { get; set; }
-        public HttpVersion Version { get; set; }
-        public HttpMessage Message { get; set; }
+        public HttpStatusCode StatusCode { get; private set; }
+        public HttpVersion Version { get; private set; }
+        public HttpMessage Message { get; private set; }
         
         public bool IsInformationalStatusCode => HttpStatusCodeUtils.CheckStatusCodeInRange(StatusCode, 100, 200);
         public bool IsSuccessStatusCode       => HttpStatusCodeUtils.CheckStatusCodeInRange(StatusCode, 200, 300);
@@ -29,11 +29,11 @@ namespace Caesura.LibNetwork
         
         public string ToHttp()
         {
-            return HttpVersionUtils.HttpVersionToString(Version)
+            return HttpVersionUtils.ConvertToString(Version)
                 + " "
                 + ((int)StatusCode).ToString()
                 + " "
-                + StatusCode.ToString()
+                + HttpStatusCodeUtils.ConvertToString(StatusCode)
                 + "\r\n"
                 + Message.ToHttp();
         }

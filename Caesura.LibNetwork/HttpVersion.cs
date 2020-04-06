@@ -13,7 +13,7 @@ namespace Caesura.LibNetwork
     
     public static class HttpVersionUtils
     {
-        public static HttpVersion ParseHttpVersion(string version)
+        public static HttpVersion Parse(string version)
         {
             return version.ToUpper() switch
             {
@@ -29,7 +29,7 @@ namespace Caesura.LibNetwork
             };
         }
         
-        public static string HttpVersionToString(HttpVersion version)
+        public static string ConvertToString(HttpVersion version)
         {
             return "HTTP/" + (version switch
             {

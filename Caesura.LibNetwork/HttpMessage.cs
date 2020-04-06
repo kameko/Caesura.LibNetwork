@@ -31,11 +31,14 @@ namespace Caesura.LibNetwork
         public HttpMessage(HttpRequest request, HttpHeaders headers)
             : this(request, headers, new HttpBody()) { }
         
-        public string ToHttp() => ToString();
+        public string ToHttp()
+        {
+            throw new NotImplementedException();
+        }
         
         public override string ToString()
         {
-            throw new NotImplementedException();
+            return ToHttp();
         }
     }
 }

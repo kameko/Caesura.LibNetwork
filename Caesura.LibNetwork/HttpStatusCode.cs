@@ -1,6 +1,9 @@
 
 namespace Caesura.LibNetwork
 {
+    using System;
+    using System.Text;
+    
     public enum HttpStatusCode
     {
         //
@@ -84,5 +87,32 @@ namespace Caesura.LibNetwork
         public static bool IsRedirectionStatusCode(HttpStatusCode code)   => CheckStatusCodeInRange(code, 300, 400);
         public static bool IsClientErrorStatusCode(HttpStatusCode code)   => CheckStatusCodeInRange(code, 400, 500);
         public static bool IsServerErrorStatusCode(HttpStatusCode code)   => CheckStatusCodeInRange(code, 500, 600);
+        
+        public static string ConvertToString(HttpStatusCode code)
+        {
+            if (code == HttpStatusCode.OK)
+            {
+                return "OK";
+            }
+            else
+            {
+                var sb  = new StringBuilder();
+                var str = code.ToString();
+                
+                // Append the first character then get
+                // the substring, so we don't add a space
+                // before the first word.
+                sb.Append(str[0]);
+                foreach (var c in str.Substring(1))
+                {
+                    if (char.IsUpper(c))
+                    {
+                        sb.Append(' ');
+                    }
+                    sb.Append(c);
+                }
+                return sb.ToString();
+            }
+        }
     }
 }

@@ -72,7 +72,7 @@ namespace Caesura.LibNetwork
             
             if (elements.Length > 2)
             {
-                version = HttpVersionUtils.ParseHttpVersion(elements[2]);
+                version = HttpVersionUtils.Parse(elements[2]);
                 if (version == HttpVersion.Unknown)
                 {
                     return ValidationCode.UnknownVersion;
