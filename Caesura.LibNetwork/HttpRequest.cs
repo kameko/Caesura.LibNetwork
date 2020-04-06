@@ -68,7 +68,7 @@ namespace Caesura.LibNetwork
             
             if (elements.Length > 2)
             {
-                version = ParseHttpVersion(elements[2]);
+                version = HttpVersionUtils.ParseHttpVersion(elements[2]);
                 if (version == HttpVersion.Unknown)
                 {
                     return ValidationCode.UnknownVersion;
@@ -87,22 +87,6 @@ namespace Caesura.LibNetwork
         {
             var success = Enum.TryParse<HttpRequestKind>(request, true, out var result);
             return success ? result : HttpRequestKind.Unknown;
-        }
-        
-        public static HttpVersion ParseHttpVersion(string ver)
-        {
-            return ver.ToUpper() switch
-            {
-                "HTTP/0.9" => HttpVersion.HTTP0_9,
-                "HTTP/1"   => HttpVersion.HTTP1_0,
-                "HTTP/1.0" => HttpVersion.HTTP1_0,
-                "HTTP/1.1" => HttpVersion.HTTP1_1,
-                "HTTP/2"   => HttpVersion.HTTP2,
-                "HTTP/2.0" => HttpVersion.HTTP2,
-                "HTTP/3"   => HttpVersion.HTTP3,
-                "HTTP/3.0" => HttpVersion.HTTP3,
-                _          => HttpVersion.Unknown
-            };
         }
         
         public enum ValidationCode

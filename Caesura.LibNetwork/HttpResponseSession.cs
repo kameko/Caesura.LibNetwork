@@ -18,9 +18,9 @@ namespace Caesura.LibNetwork
             _stream = stream;
         }
         
-        public async Task Respond(HttpMessage message)
+        public async Task Respond(HttpResponse response)
         {
-            var http = message.ToHttp();
+            var http  = response.ToHttp();
             var bytes = Encoding.UTF8.GetBytes(http);
             await _stream.WriteAsync(bytes, _token);
         }
