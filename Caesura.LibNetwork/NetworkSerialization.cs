@@ -2,47 +2,45 @@
 namespace Caesura.LibNetwork
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
+    using System.Threading;
     using System.Text;
     using System.Net.Sockets;
     
     public class NetworkSerialization
     {
-        internal static HttpResponse GetResponse(LibNetworkConfig config, NetworkStream stream)
+        internal static HttpResponse GetResponse(CancellationToken token, LibNetworkConfig config, NetworkStream stream)
         {
             var sb           = new StringBuilder();
-            var response_str = ReadLine(stream, sb, config.HeaderCharReadLimit);
-            var message      = GetMessage(config, stream, sb);
+            var response_str = ReadLine(token, stream, sb, config.HeaderCharReadLimit);
+            var message      = GetMessage(token, config, stream, sb);
             var response     = new HttpResponse(response_str, message);
             return response;
         }
         
-        internal static HttpRequest GetRequest(LibNetworkConfig config, NetworkStream stream)
+        internal static HttpRequest GetRequest(CancellationToken token, LibNetworkConfig config, NetworkStream stream)
         {
             var sb          = new StringBuilder();
-            var request_str = ReadLine(stream, sb, config.HeaderCharReadLimit);
-            var message     = GetMessage(config, stream, sb);
+            var request_str = ReadLine(token, stream, sb, config.HeaderCharReadLimit);
+            var message     = GetMessage(token, config, stream, sb);
             var request     = new HttpRequest(request_str, message);
             return request;
         }
         
-        internal static HttpMessage GetMessage(LibNetworkConfig config, NetworkStream stream, StringBuilder sb)
+        internal static HttpMessage GetMessage(CancellationToken token, LibNetworkConfig config, NetworkStream stream, StringBuilder sb)
         {
-            var headers = GetHeaders(stream, sb, config.HeaderAmountLimit, config.HeaderCharReadLimit);
-            var body    = GetBody(stream, sb, config.BodyCharReadLimit);
+            var headers = GetHeaders(token, stream, sb, config.HeaderAmountLimit, config.HeaderCharReadLimit);
+            var body    = GetBody(token, stream, sb, config.BodyCharReadLimit);
             var message = new HttpMessage(headers, body);
             return message;
         }
         
-        internal static HttpHeaders GetHeaders(NetworkStream stream, StringBuilder sb, int header_limit, int header_char_limit)
+        internal static HttpHeaders GetHeaders(CancellationToken token, NetworkStream stream, StringBuilder sb, int header_limit, int header_char_limit)
         {
             var headers = new HttpHeaders();
             var line    = string.Empty;
             while (headers.Count <= header_limit)
             {
-                line = ReadLine(stream, sb, header_char_limit);
+                line = ReadLine(token, stream, sb, header_char_limit);
                 
                 // If all we get back is a newline, that means we're done
                 // with the headers. Next we read the body.
@@ -62,13 +60,13 @@ namespace Caesura.LibNetwork
             return headers;
         }
         
-        internal static HttpBody GetBody(NetworkStream stream, StringBuilder sb, int body_limit)
+        internal static HttpBody GetBody(CancellationToken token, NetworkStream stream, StringBuilder sb, int body_limit)
         {
             sb.Clear();
             
             char current_char = '\0';
             int current_int   = 0;
-            while (current_int > -1 && current_int <= body_limit)
+            while (current_int > -1 && current_int <= body_limit && !token.IsCancellationRequested)
             {
                 current_int  = stream.ReadByte();
                 current_char = Convert.ToChar(current_int);
@@ -79,14 +77,14 @@ namespace Caesura.LibNetwork
             return body;
         }
         
-        internal static string ReadLine(NetworkStream stream, StringBuilder sb, int limit)
+        internal static string ReadLine(CancellationToken token, NetworkStream stream, StringBuilder sb, int limit)
         {
             sb.Clear();
             
             char last_char    = '\0';
             char current_char = '\0';
             int current_int   = 0;
-            while (current_int > -1 && current_int <= limit)
+            while (current_int > -1 && current_int <= limit && !token.IsCancellationRequested)
             {
                 current_int  = stream.ReadByte();
                 current_char = Convert.ToChar(current_int);

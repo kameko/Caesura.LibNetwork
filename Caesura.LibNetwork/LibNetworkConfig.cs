@@ -36,7 +36,7 @@ namespace Caesura.LibNetwork
             HeaderAmountLimit           = 100;
             HeaderCharReadLimit         = 1_048_576;
             BodyCharReadLimit           = int.MaxValue;
-            DefaultTimeoutMilliseconds  = 3_000;
+            DefaultTimeoutMilliseconds  = 5_000;
         }
         
         public static LibNetworkConfig GetDefault()

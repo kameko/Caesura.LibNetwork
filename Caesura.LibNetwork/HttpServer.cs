@@ -156,12 +156,12 @@ namespace Caesura.LibNetwork
         
         private async Task HandleSession(TcpSession session)
         {
+            var token   = Canceller?.Token ?? (new CancellationTokenSource(Config.DefaultTimeoutMilliseconds)).Token;
             var stream  = session.Client.GetStream();
-            var request = NetworkSerialization.GetRequest(Config, stream);
+            var request = NetworkSerialization.GetRequest(token, Config, stream);
             
             if (request.IsValid)
             {
-                var token = Canceller?.Token ?? (new CancellationTokenSource(Config.DefaultTimeoutMilliseconds)).Token;
                 var response_session = new HttpResponseSession(token, stream);
                 await (request.Kind switch
                 {
