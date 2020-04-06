@@ -22,6 +22,11 @@ namespace Caesura.LibNetwork
             raw_body = Sanitize(body);
         }
         
+        public string ToHttp()
+        {
+            return raw_body;
+        }
+        
         public DeserializationResult<T> Deserialize<T>()
         {
             var options = new JsonSerializerOptions()

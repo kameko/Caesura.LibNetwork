@@ -4,7 +4,6 @@ namespace Caesura.LibNetwork
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Text;
     using System.Net.Sockets;
     
     public class HttpResponseSession
@@ -20,8 +19,7 @@ namespace Caesura.LibNetwork
         
         public async Task Respond(HttpResponse response)
         {
-            var http  = response.ToHttp();
-            var bytes = Encoding.UTF8.GetBytes(http);
+            var bytes = response.ToBytes();
             await _stream.WriteAsync(bytes, _token);
         }
     }

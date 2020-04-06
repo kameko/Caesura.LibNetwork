@@ -27,7 +27,7 @@ namespace Caesura.LibNetwork
         private TcpListener Listener;
         private List<TcpSession> Sessions;
         
-        public event Func<HttpMessage, HttpResponseSession, Task> OnGET;
+        public event Func<HttpRequest, HttpResponseSession, Task> OnGET;
         
         public HttpServer(LibNetworkConfig config, IPAddress ip, int port)
         {
@@ -157,15 +157,15 @@ namespace Caesura.LibNetwork
         private async Task HandleSession(TcpSession session)
         {
             var stream  = session.Client.GetStream();
-            var message = BuildMessage(stream);
+            var request = NetworkSerialization.GetRequest(Config, stream);
             
-            if (message.IsValid)
+            if (request.IsValid)
             {
                 var token = Canceller?.Token ?? (new CancellationTokenSource(Config.DefaultTimeoutMilliseconds)).Token;
                 var response_session = new HttpResponseSession(token, stream);
-                await (message.Request.Kind switch
+                await (request.Kind switch
                 {
-                    HttpRequestKind.GET => OnGET(message, response_session),
+                    HttpRequestKind.GET => OnGET(request, response_session),
                     _                   => throw new NotImplementedException(),
                 });
             }
@@ -173,90 +173,6 @@ namespace Caesura.LibNetwork
             {
                 // TODO: call an event
             }
-        }
-        
-        private HttpMessage BuildMessage(NetworkStream stream)
-        {
-            var sb      = new StringBuilder();
-            var request = GetRequest(stream, sb);
-            var headers = GetHeaders(stream, sb); // GetHeaders consumes the empty newline before the body.
-            var body    = GetBody(stream, sb);
-            var message = new HttpMessage(request, headers, body);
-            return message;
-        }
-        
-        private HttpRequest GetRequest(NetworkStream stream, StringBuilder sb)
-        {
-            var request_str = ReadLine(stream, sb, Config.HeaderCharReadLimit);
-            var request     = new HttpRequest(request_str);
-            return request;
-        }
-        
-        private HttpHeaders GetHeaders(NetworkStream stream, StringBuilder sb)
-        {
-            var headers = new HttpHeaders();
-            var line    = string.Empty;
-            while (headers.Count <= Config.HeaderAmountLimit)
-            {
-                line = ReadLine(stream, sb, Config.HeaderCharReadLimit);
-                
-                // If all we get back is a newline, that means we're done
-                // with the headers. Next we read the body.
-                if (line == "\r\n")
-                {
-                    break;
-                }
-                if (string.IsNullOrEmpty(line))
-                {
-                    break;
-                }
-                
-                var header = new HttpHeader(line);
-                headers.Add(header);
-            }
-            
-            return headers;
-        }
-        
-        private HttpBody GetBody(NetworkStream stream, StringBuilder sb)
-        {
-            sb.Clear();
-            
-            char current_char = '\0';
-            int current_int   = 0;
-            while (current_int > -1 && current_int <= Config.BodyCharReadLimit)
-            {
-                current_int  = stream.ReadByte();
-                current_char = Convert.ToChar(current_int);
-                sb.Append(current_char);
-            }
-            
-            var body = new HttpBody(sb.ToString());
-            return body;
-        }
-        
-        private string ReadLine(NetworkStream stream, StringBuilder sb, int limit)
-        {
-            sb.Clear();
-            
-            char last_char    = '\0';
-            char current_char = '\0';
-            int current_int   = 0;
-            while (current_int > -1 && current_int <= limit)
-            {
-                current_int  = stream.ReadByte();
-                current_char = Convert.ToChar(current_int);
-                
-                sb.Append(current_char);
-                
-                if (last_char == '\r' && current_char == '\n')
-                {
-                    break;
-                }
-                
-                last_char = current_char;
-            }
-            return sb.ToString();
         }
         
         public void Dispose()

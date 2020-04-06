@@ -2,29 +2,65 @@
 namespace Caesura.LibNetwork
 {
     using System;
-    
-    // TODO: do the same thing here as with HttpResponse.
-    // take HttpRequest out of HttpMessage and put a
-    // HttpMessage inside of here.
+    using System.Text;
     
     public class HttpRequest
     {
         public HttpRequestKind Kind { get; private set; }
         public Uri Resource { get; private set; }
         public HttpVersion Version { get; private set; }
-        public bool IsValid { get; private set; }
+        public HttpMessage Message { get; set; }
         
-        public HttpRequest()
+        private bool is_valid;
+        public bool IsValid => is_valid && Message.IsValid;
+        
+        private HttpRequest()
         {
             Resource = new Uri("/unknown", UriKind.RelativeOrAbsolute);
+            Message  = new HttpMessage();
         }
         
-        public HttpRequest(string line)
+        public HttpRequest(string line, HttpMessage message)
         {
-            IsValid  = TryValidate(line, out var kind, out var resource, out var version);
+            is_valid = TryValidate(line, out var kind, out var resource, out var version);
             Kind     = kind;
             Resource = resource;
             Version  = version;
+            Message  = message;
+        }
+        
+        public HttpRequest(HttpRequestKind kind, Uri resource, HttpVersion version, HttpMessage message)
+        {
+            Kind     = kind;
+            Resource = resource;
+            Version  = version;
+            Message  = message;
+        }
+        
+        public HttpRequest(HttpRequestKind kind, string resource, HttpVersion version, HttpMessage message)
+        {
+            Kind     = kind;
+            Resource = new Uri(resource, UriKind.RelativeOrAbsolute);
+            Version  = version;
+            Message  = message;
+        }
+        
+        public string ToHttp()
+        {
+            return HttpRequestKindUtils.ConvertToString(Kind)
+                + " "
+                + Resource.ToString()
+                + " "
+                + HttpVersionUtils.ConvertToString(Version)
+                + "\r\n"
+                + Message.ToHttp();
+        }
+        
+        public byte[] ToBytes()
+        {
+            var http  = ToHttp();
+            var bytes = Encoding.UTF8.GetBytes(http);
+            return bytes;
         }
         
         public static bool TryValidate(string request, out HttpRequestKind kind, out Uri resource, out HttpVersion version)
@@ -46,7 +82,7 @@ namespace Caesura.LibNetwork
         {
             var elements = request.Split(' ');
             
-            kind = elements.Length > 0 ? ParseHttpRequestKind(elements[0]) : HttpRequestKind.Unknown;
+            kind = elements.Length > 0 ? HttpRequestKindUtils.ParseHttpRequestKind(elements[0]) : HttpRequestKind.Unknown;
             if (kind == HttpRequestKind.Unknown)
             {
                 resource = new Uri("/unknown", UriKind.RelativeOrAbsolute);
@@ -87,10 +123,9 @@ namespace Caesura.LibNetwork
             return ValidationCode.Valid;
         }
         
-        public static HttpRequestKind ParseHttpRequestKind(string request)
+        public override string ToString()
         {
-            var success = Enum.TryParse<HttpRequestKind>(request, true, out var result);
-            return success ? result : HttpRequestKind.Unknown;
+            return ToHttp();
         }
         
         public enum ValidationCode

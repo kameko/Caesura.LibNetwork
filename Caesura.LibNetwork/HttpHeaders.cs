@@ -5,6 +5,7 @@ namespace Caesura.LibNetwork
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
     
     public class HttpHeaders : IEnumerable<HttpHeader>
     {
@@ -23,6 +24,16 @@ namespace Caesura.LibNetwork
         public HttpHeaders(IEnumerable<HttpHeader> headers)
         {
             Headers = new List<HttpHeader>(headers);
+        }
+        
+        public string ToHttp()
+        {
+            var sb = new StringBuilder();
+            foreach (var header in Headers)
+            {
+                sb.Append(header.ToHttp());
+            }
+            return sb.ToString();
         }
         
         public void Add(HttpHeader header)

@@ -6,6 +6,7 @@ namespace Caesura.LibNetwork
     
     public enum HttpStatusCode
     {
+        Unkown                          = 0,
         //
         // Informational 1xx
         //
@@ -87,6 +88,20 @@ namespace Caesura.LibNetwork
         public static bool IsRedirectionStatusCode(HttpStatusCode code)   => CheckStatusCodeInRange(code, 300, 400);
         public static bool IsClientErrorStatusCode(HttpStatusCode code)   => CheckStatusCodeInRange(code, 400, 500);
         public static bool IsServerErrorStatusCode(HttpStatusCode code)   => CheckStatusCodeInRange(code, 500, 600);
+        
+        public static bool ConvertFromNumber(int number, out HttpStatusCode code)
+        {
+            if (Enum.IsDefined(typeof(HttpStatusCode), number))
+            {
+                code = (HttpStatusCode)number;
+                return true;
+            }
+            else
+            {            
+                code = HttpStatusCode.Unkown;
+                return false;
+            }
+        }
         
         public static int ConvertToNumber(HttpStatusCode code)
         {

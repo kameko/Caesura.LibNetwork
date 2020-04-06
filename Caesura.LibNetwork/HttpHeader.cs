@@ -27,6 +27,16 @@ namespace Caesura.LibNetwork
             
         }
         
+        public string ToHttp()
+        {
+            return whole_header;
+        }
+        
+        public string ToHttpNoNewline()
+        {
+            return $"{header_name}: {header_body}";
+        }
+        
         public bool CompareName(string name)
         {
             if (string.IsNullOrEmpty(header_name) || string.IsNullOrWhiteSpace(header_name))

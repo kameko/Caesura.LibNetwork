@@ -2,12 +2,13 @@
 namespace Caesura.LibNetwork
 {
     using System;
+    using System.Text;
     
     public class HttpResponse
     {
-        public HttpStatusCode StatusCode { get; private set; }
         public HttpVersion Version { get; private set; }
-        public HttpMessage Message { get; private set; }
+        public HttpStatusCode StatusCode { get; private set; }
+        public HttpMessage Message { get; set; }
         
         public bool IsInformationalStatusCode => HttpStatusCodeUtils.CheckStatusCodeInRange(StatusCode, 100, 200);
         public bool IsSuccessStatusCode       => HttpStatusCodeUtils.CheckStatusCodeInRange(StatusCode, 200, 300);
@@ -15,15 +16,26 @@ namespace Caesura.LibNetwork
         public bool IsClientErrorStatusCode   => HttpStatusCodeUtils.CheckStatusCodeInRange(StatusCode, 400, 500);
         public bool IsServerErrorStatusCode   => HttpStatusCodeUtils.CheckStatusCodeInRange(StatusCode, 500, 600);
         
-        public HttpResponse()
+        private bool is_valid;
+        public bool IsValid => is_valid && Message.IsValid;
+        
+        private HttpResponse()
         {
             Message = new HttpMessage();
         }
         
-        public HttpResponse(HttpStatusCode code, HttpVersion version, HttpMessage message)
+        public HttpResponse(string line, HttpMessage message)
         {
-            StatusCode = code;
+            is_valid   = TryValidate(line, out var version, out var status);
             Version    = version;
+            StatusCode = status;
+            Message    = message;
+        }
+        
+        public HttpResponse(HttpVersion version, HttpStatusCode code, HttpMessage message)
+        {
+            Version    = version;
+            StatusCode = code;
             Message    = message;
         }
         
@@ -38,7 +50,86 @@ namespace Caesura.LibNetwork
                 + Message.ToHttp();
         }
         
-        // TODO: parsing from string
+        public byte[] ToBytes()
+        {
+            var http  = ToHttp();
+            var bytes = Encoding.UTF8.GetBytes(http);
+            return bytes;
+        }
         
+        public static bool TryValidate(string response, out HttpVersion version, out HttpStatusCode status)
+        {
+            var result = Validate(response, out version, out status);
+            return result == ValidationCode.Valid;
+        }
+        
+        public static void ValidateOrThrow(string response, out HttpVersion version, out HttpStatusCode status)
+        {
+            var result = Validate(response, out version, out status);
+            if (result != ValidationCode.Valid)
+            {
+                throw new InvalidHttpResponseException(result);
+            }
+        }
+        
+        public static ValidationCode Validate(string response, out HttpVersion version, out HttpStatusCode status)
+        {
+            var elements = response.Split(' ');
+            
+            if (elements.Length > 0)
+            {
+                version = HttpVersionUtils.Parse(elements[0]);
+                if (version == HttpVersion.Unknown)
+                {
+                    status = HttpStatusCode.Unkown;
+                    return ValidationCode.UnknownVersion;
+                }
+            }
+            else
+            {
+                version = HttpVersion.Unknown;
+                status  = HttpStatusCode.Unkown;
+                return ValidationCode.NoVersion;
+            }
+            
+            if (elements.Length > 1)
+            {
+                var stat_int_success = int.TryParse(elements[1], out int stat_int);
+                if (!stat_int_success)
+                {
+                    status = HttpStatusCode.Unkown;
+                    return ValidationCode.StatusNotInt;
+                }
+                
+                var stat_sucecss = HttpStatusCodeUtils.ConvertFromNumber(stat_int, out status);
+                if (!stat_sucecss)
+                {
+                    return ValidationCode.UnknownStatus;
+                }
+            }
+            else
+            {
+                status = HttpStatusCode.Unkown;
+                return ValidationCode.NoStatus;
+            }
+            
+            return ValidationCode.Valid;
+        }
+        
+        public override string ToString()
+        {
+            return ToHttp();
+        }
+        
+        public enum ValidationCode
+        {
+            Unknown        = 0,
+            Valid          = 1,
+            UnknownVersion = 2,
+            NoVersion      = 3,
+            NoStatus       = 4,
+            StatusNotInt   = 5,
+            UnknownStatus  = 6,
+        }
     }
 }
