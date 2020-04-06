@@ -17,6 +17,7 @@ namespace Caesura.LibNetwork
         public JsonSerializerOptions JsonOptions { get; set; }
         // HTTP server config
         public int MaxConnections { get; set; }
+        public int HeaderAmountLimit { get; set; }
         public int HeaderCharReadLimit { get; set; }
         public int BodyCharReadLimit { get; set; }
         
@@ -31,6 +32,7 @@ namespace Caesura.LibNetwork
             };
             
             MaxConnections      = 20;
+            HeaderAmountLimit   = 100;
             HeaderCharReadLimit = 1_048_576;
             BodyCharReadLimit   = int.MaxValue;
         }

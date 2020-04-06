@@ -151,7 +151,7 @@ namespace Caesura.LibNetwork
             var output  = session.Client.GetStream();
             
             var request = GetRequest(input, sb);
-            var headers = GetHeaders(input, sb);
+            var headers = GetHeaders(input, sb); // GetHeaders consumes the newline before the body.
             var body    = GetBody(input, sb);
             var message = new HttpMessage(request, headers, body);
             
@@ -174,13 +174,18 @@ namespace Caesura.LibNetwork
         private HttpHeaders GetHeaders(NetworkStream stream, StringBuilder sb)
         {
             var headers = new HttpHeaders();
-            
-            var line = string.Empty;
-            while (true)
+            var line    = string.Empty;
+            while (headers.Count < Config.HeaderAmountLimit)
             {
                 line = ReadLine(stream, sb, Config.HeaderCharReadLimit);
                 
+                // If all we get back is a newline, that means we're done
+                // with the headers and next we read the body.
                 if (line == "\r\n")
+                {
+                    break;
+                }
+                if (string.IsNullOrEmpty(line))
                 {
                     break;
                 }
