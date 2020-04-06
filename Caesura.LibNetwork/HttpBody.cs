@@ -2,9 +2,6 @@
 namespace Caesura.LibNetwork
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
     using System.Text.Json;
     
     public class HttpBody
@@ -86,28 +83,36 @@ namespace Caesura.LibNetwork
         
         public class DeserializationResult<T>
         {
+            private T _item;
+            
             public DeserializationCode Code { get; set; }
-            public T Item { get; set; }
+            public T Item
+            {
+                get => Code == DeserializationCode.Ok 
+                    ? _item
+                    : throw new InvalidOperationException("Deserialization result not ok.");
+                set => _item = value;
+            }
             public Exception? Error { get; set; }
             
             public bool IsOk => Code == DeserializationCode.Ok;
             
             public DeserializationResult(T item)
             {
+                _item = item;
                 Code  = DeserializationCode.Ok;
-                Item  = item;
             }
             
             public DeserializationResult(DeserializationCode code)
             {
+                _item  = default!;
                 Code = code;
-                Item = default!;
             }
             
             public DeserializationResult(DeserializationCode code, Exception exception)
             {
+                _item  = default!;
                 Code  = code;
-                Item  = default!;
                 Error = exception;
             }
         }

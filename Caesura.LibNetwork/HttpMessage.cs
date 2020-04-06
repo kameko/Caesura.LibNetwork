@@ -2,11 +2,7 @@
 namespace Caesura.LibNetwork
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
     using System.Net;
-    using System.Net.Http;
     
     public class HttpMessage
     {
@@ -55,8 +51,16 @@ namespace Caesura.LibNetwork
             var code = (int)StatusCode;
             return code >= begin && code < end;
         }
+        
+        public string ToHttp() => ToString();
+        
+        public override string ToString()
+        {
+            throw new NotImplementedException();
+        }
     }
     
+    // TODO: Deprecate for HttpBody.Deserialize<T>()
     public class HttpMessage<T> : HttpMessage
     {
         private bool is_entity_set;

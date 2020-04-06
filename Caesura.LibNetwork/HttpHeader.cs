@@ -2,9 +2,7 @@
 namespace Caesura.LibNetwork
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq;
-    using System.Threading.Tasks;
     
     public readonly struct HttpHeader
     {
@@ -14,9 +12,9 @@ namespace Caesura.LibNetwork
         private readonly bool is_valid;
         
         public string Header => whole_header;
-        public string Name => header_name;
-        public string Body => header_body;
-        public bool IsValid => is_valid;
+        public string Name   => header_name;
+        public string Body   => header_body;
+        public bool IsValid  => is_valid;
         
         public HttpHeader(string header)
         {
@@ -31,7 +29,7 @@ namespace Caesura.LibNetwork
         
         public bool CompareName(string name)
         {
-            if (string.IsNullOrEmpty(header_name))
+            if (string.IsNullOrEmpty(header_name) || string.IsNullOrWhiteSpace(header_name))
             {
                 return false;
             }

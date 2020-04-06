@@ -5,15 +5,14 @@ namespace Caesura.LibNetwork
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Threading.Tasks;
     
     public class HttpHeaders : IEnumerable<HttpHeader>
     {
         private TriStateValidation is_valid;
         private List<HttpHeader> Headers;
         
-        public bool IsValid => CheckIsValid();
-        public int Count => Headers.Count;
+        public bool IsValid    => CheckIsValid();
+        public int Count       => Headers.Count;
         public bool HasHeaders => Headers.Count > 0;
         
         public HttpHeaders()

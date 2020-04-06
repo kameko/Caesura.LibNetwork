@@ -2,9 +2,6 @@
 namespace Caesura.LibNetwork
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
     
     public class HttpRequest
     {
@@ -48,7 +45,6 @@ namespace Caesura.LibNetwork
             kind = elements.Length > 0 ? ParseHttpRequestKind(elements[0]) : HttpRequestKind.Unknown;
             if (kind == HttpRequestKind.Unknown)
             {
-                
                 resource = new Uri("/unknown", UriKind.RelativeOrAbsolute);
                 version  = HttpVersion.Unknown;
                 return ValidationCode.RequestUnknown;
@@ -59,7 +55,7 @@ namespace Caesura.LibNetwork
                 var uri_success = Uri.TryCreate(elements[1], UriKind.RelativeOrAbsolute, out resource!);
                 if (!uri_success)
                 {
-                    version  = HttpVersion.Unknown;
+                    version = HttpVersion.Unknown;
                     return ValidationCode.InvalidResource;
                 }
             }
@@ -80,7 +76,7 @@ namespace Caesura.LibNetwork
             }
             else
             {
-                version  = HttpVersion.Unknown;
+                version = HttpVersion.Unknown;
                 return ValidationCode.NoVersion;
             }
             

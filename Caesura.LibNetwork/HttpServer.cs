@@ -27,12 +27,16 @@ namespace Caesura.LibNetwork
         private TcpListener Listener;
         private List<TcpSession> Sessions;
         
+        public event Func<HttpMessage, HttpResponseSession, Task> OnGET;
+        
         public HttpServer(LibNetworkConfig config, IPAddress ip, int port)
         {
             var nport = port <= 0 ? HttpServers.DefaultIpAddress : port;
             Config    = config;
             Listener  = new TcpListener(ip, nport);
             Sessions  = new List<TcpSession>();
+            
+            OnGET = delegate { return Task.CompletedTask; };
         }
         
         public HttpServer(LibNetworkConfig config, string ip, int port) : this(config, IPAddress.Parse(ip), port)
@@ -79,9 +83,14 @@ namespace Caesura.LibNetwork
                 throw new InvalidOperationException("HTTP server has already been cancelled.");
             }
             
-            // TODO: TcpListener.Stop() does not close existing connections, this must be done manually.
             Listener.Stop();
             Canceller.Cancel();
+            
+            var sessions = new List<TcpSession>(Sessions);
+            foreach (var session in sessions)
+            {
+                session.Client.Close();
+            }
         }
         
         private void ValidateStart()
@@ -117,9 +126,9 @@ namespace Caesura.LibNetwork
                     var session = new TcpSession(client);
                     
                     Sessions.Add(session);
-                    Task.Run(() =>
+                    Task.Run(async () =>
                     {
-                        HandleSession(session);
+                        await HandleSession(session);
                     })
                     .ContinueWith(t =>
                     {
@@ -127,6 +136,7 @@ namespace Caesura.LibNetwork
                         {
                             // TODO: handle error
                         }
+                        session.Client.Close();
                         Sessions.Remove(session);
                     });
                 }
@@ -144,24 +154,35 @@ namespace Caesura.LibNetwork
             return Task.CompletedTask;
         }
         
-        private Task HandleSession(TcpSession session)
+        private async Task HandleSession(TcpSession session)
         {
-            var sb      = new StringBuilder();
-            var input   = session.Client.GetStream();
-            var output  = session.Client.GetStream();
-            
-            var request = GetRequest(input, sb);
-            var headers = GetHeaders(input, sb); // GetHeaders consumes the newline before the body.
-            var body    = GetBody(input, sb);
-            var message = new HttpMessage(request, headers, body);
+            var stream  = session.Client.GetStream();
+            var message = BuildMessage(stream);
             
             if (message.IsValid)
             {
-                
-                // TODO: invoke callbacks
+                var token = Canceller?.Token ?? (new CancellationTokenSource(Config.DefaultTimeoutMilliseconds)).Token;
+                var response_session = new HttpResponseSession(token, stream);
+                await (message.Request.Kind switch
+                {
+                    HttpRequestKind.GET => OnGET(message, response_session),
+                    _                   => throw new NotImplementedException(),
+                });
             }
-            
-            return Task.CompletedTask;
+            else
+            {
+                // TODO: call an event
+            }
+        }
+        
+        private HttpMessage BuildMessage(NetworkStream stream)
+        {
+            var sb      = new StringBuilder();
+            var request = GetRequest(stream, sb);
+            var headers = GetHeaders(stream, sb); // GetHeaders consumes the empty newline before the body.
+            var body    = GetBody(stream, sb);
+            var message = new HttpMessage(request, headers, body);
+            return message;
         }
         
         private HttpRequest GetRequest(NetworkStream stream, StringBuilder sb)
@@ -175,12 +196,12 @@ namespace Caesura.LibNetwork
         {
             var headers = new HttpHeaders();
             var line    = string.Empty;
-            while (headers.Count < Config.HeaderAmountLimit)
+            while (headers.Count <= Config.HeaderAmountLimit)
             {
                 line = ReadLine(stream, sb, Config.HeaderCharReadLimit);
                 
                 // If all we get back is a newline, that means we're done
-                // with the headers and next we read the body.
+                // with the headers. Next we read the body.
                 if (line == "\r\n")
                 {
                     break;
@@ -203,7 +224,7 @@ namespace Caesura.LibNetwork
             
             char current_char = '\0';
             int current_int   = 0;
-            while (current_int > -1 && current_int < Config.BodyCharReadLimit)
+            while (current_int > -1 && current_int <= Config.BodyCharReadLimit)
             {
                 current_int  = stream.ReadByte();
                 current_char = Convert.ToChar(current_int);
@@ -221,7 +242,7 @@ namespace Caesura.LibNetwork
             char last_char    = '\0';
             char current_char = '\0';
             int current_int   = 0;
-            while (current_int > -1 && current_int < limit)
+            while (current_int > -1 && current_int <= limit)
             {
                 current_int  = stream.ReadByte();
                 current_char = Convert.ToChar(current_int);
