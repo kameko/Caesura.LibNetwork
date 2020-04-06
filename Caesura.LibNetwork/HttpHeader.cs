@@ -42,25 +42,25 @@ namespace Caesura.LibNetwork
         public static bool TryValidate(string header, out string name, out string body)
         {
             var result = Validate(header, out name, out body);
-            return result == HttpHeaderValidation.Valid;
+            return result == ValidationCode.Valid;
         }
         
         public static void ValidateOrThrow(string header, out string name, out string body)
         {
             var result = Validate(header, out name, out body);
-            if (result != HttpHeaderValidation.Valid)
+            if (result != ValidationCode.Valid)
             {
                 throw new InvalidHttpHeaderException(result);
             }
         }
         
-        public static HttpHeaderValidation Validate(string header, out string name, out string body)
+        public static ValidationCode Validate(string header, out string name, out string body)
         {
             if (!header.Contains(':'))
             {
                 name = string.Empty;
                 body = string.Empty;
-                return HttpHeaderValidation.NoColon;
+                return ValidationCode.NoColon;
             }
             
             var split = SplitHeaderAndSanitize(header);
@@ -69,7 +69,7 @@ namespace Caesura.LibNetwork
             
             if (ContainsWhitespace(name))
             {
-                return HttpHeaderValidation.NameContainsWhitespace;
+                return ValidationCode.NameContainsWhitespace;
             }
             
             if (ContainsCRLF(body))
@@ -78,10 +78,10 @@ namespace Caesura.LibNetwork
             }
             else
             {
-                return HttpHeaderValidation.BodyDoesNotEndInCRLF;
+                return ValidationCode.BodyDoesNotEndInCRLF;
             }
             
-            return HttpHeaderValidation.Valid;
+            return ValidationCode.Valid;
             
             // Local functions.
             
@@ -97,7 +97,7 @@ namespace Caesura.LibNetwork
             string RemoveCRLF(string x) => x.Remove(x.Length - 2);
         }
         
-        public enum HttpHeaderValidation
+        public enum ValidationCode
         {
             Unkown                  = 0,
             Valid                   = 1,

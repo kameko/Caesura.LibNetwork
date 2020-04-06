@@ -29,19 +29,19 @@ namespace Caesura.LibNetwork
         public static bool TryValidate(string request, out HttpRequestKind kind, out Uri resource, out HttpVersion version)
         {
             var result = Validate(request, out kind, out resource, out version);
-            return result == HttpRequestValidation.Valid;
+            return result == ValidationCode.Valid;
         }
         
         public static void ValidateOrThrow(string request, out HttpRequestKind kind, out Uri resource, out HttpVersion version)
         {
             var result = Validate(request, out kind, out resource, out version);
-            if (result != HttpRequestValidation.Valid)
+            if (result != ValidationCode.Valid)
             {
                 throw new InvalidHttpRequestException(result);
             }
         }
         
-        public static HttpRequestValidation Validate(string request, out HttpRequestKind kind, out Uri resource, out HttpVersion version)
+        public static ValidationCode Validate(string request, out HttpRequestKind kind, out Uri resource, out HttpVersion version)
         {
             var elements = request.Split(' ');
             
@@ -51,7 +51,7 @@ namespace Caesura.LibNetwork
                 
                 resource = new Uri("/unknown", UriKind.RelativeOrAbsolute);
                 version  = HttpVersion.Unknown;
-                return HttpRequestValidation.RequestUnknown;
+                return ValidationCode.RequestUnknown;
             }
             
             if (elements.Length > 1)
@@ -60,14 +60,14 @@ namespace Caesura.LibNetwork
                 if (!uri_success)
                 {
                     version  = HttpVersion.Unknown;
-                    return HttpRequestValidation.InvalidResource;
+                    return ValidationCode.InvalidResource;
                 }
             }
             else
             {
                 resource = new Uri("/unknown", UriKind.RelativeOrAbsolute);
                 version  = HttpVersion.Unknown;
-                return HttpRequestValidation.NoResource;
+                return ValidationCode.NoResource;
             }
             
             if (elements.Length > 2)
@@ -75,16 +75,16 @@ namespace Caesura.LibNetwork
                 version = ParseHttpVersion(elements[2]);
                 if (version == HttpVersion.Unknown)
                 {
-                    return HttpRequestValidation.UnknownVersion;
+                    return ValidationCode.UnknownVersion;
                 }
             }
             else
             {
                 version  = HttpVersion.Unknown;
-                return HttpRequestValidation.NoVersion;
+                return ValidationCode.NoVersion;
             }
             
-            return HttpRequestValidation.Valid;
+            return ValidationCode.Valid;
         }
         
         public static HttpRequestKind ParseHttpRequestKind(string request)
@@ -109,7 +109,7 @@ namespace Caesura.LibNetwork
             };
         }
         
-        public enum HttpRequestValidation
+        public enum ValidationCode
         {
             Unknown         = 0,
             Valid           = 1,

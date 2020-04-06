@@ -25,9 +25,39 @@ namespace Caesura.LibNetwork
             raw_body = Sanitize(body);
         }
         
-        public HttpBodyDeserializationResult Deserialize<T>(out T item)
+        public DeserializationResult<T> Deserialize<T>()
         {
-            throw new NotImplementedException();
+            var options = new JsonSerializerOptions()
+            {
+                // TODO: consider deserializer options
+            };
+            return Deserialize<T>(options);
+        }
+        
+        public DeserializationResult<T> Deserialize<T>(JsonSerializerOptions options)
+        {
+            if (!HasBody)
+            {
+                return new DeserializationResult<T>(DeserializationCode.NoBody);
+            }
+            if (!IsValid)
+            {
+                return new DeserializationResult<T>(DeserializationCode.BodyNotValid);
+            }
+            
+            try
+            {
+                var item = JsonSerializer.Deserialize<T>(raw_body, options);
+                return new DeserializationResult<T>(item);
+            }
+            catch (JsonException je)
+            {
+                return new DeserializationResult<T>(DeserializationCode.DeserializationError, je);
+            }
+            catch (Exception e)
+            {
+                return new DeserializationResult<T>(DeserializationCode.UnknownError, e);
+            }
         }
         
         private string Sanitize(string body)
@@ -44,10 +74,42 @@ namespace Caesura.LibNetwork
             return raw_body;
         }
         
-        public enum HttpBodyDeserializationResult
+        public enum DeserializationCode
         {
-            Unknown = 0,
-            Ok      = 1,
+            Unknown              = 0,
+            Ok                   = 1,
+            NoBody               = 2,
+            BodyNotValid         = 3,
+            UnknownError         = 4,
+            DeserializationError = 5,
+        }
+        
+        public class DeserializationResult<T>
+        {
+            public DeserializationCode Code { get; set; }
+            public T Item { get; set; }
+            public Exception? Error { get; set; }
+            
+            public bool IsOk => Code == DeserializationCode.Ok;
+            
+            public DeserializationResult(T item)
+            {
+                Code  = DeserializationCode.Ok;
+                Item  = item;
+            }
+            
+            public DeserializationResult(DeserializationCode code)
+            {
+                Code = code;
+                Item = default!;
+            }
+            
+            public DeserializationResult(DeserializationCode code, Exception exception)
+            {
+                Code  = code;
+                Item  = default!;
+                Error = exception;
+            }
         }
     }
 }

@@ -21,9 +21,9 @@ namespace Caesura.LibNetwork
     [Serializable]
     public class InvalidHttpHeaderException : Exception
     {
-        public HttpHeader.HttpHeaderValidation ValidationCode { get; private set; }
+        public HttpHeader.ValidationCode ValidationCode { get; private set; }
         
-        public InvalidHttpHeaderException(HttpHeader.HttpHeaderValidation validation) : this(validation.ToString())
+        public InvalidHttpHeaderException(HttpHeader.ValidationCode validation) : this(validation.ToString())
         {
             ValidationCode = validation;
         }
@@ -37,9 +37,9 @@ namespace Caesura.LibNetwork
     [Serializable]
     public class InvalidHttpRequestException : Exception
     {
-        public HttpRequest.HttpRequestValidation ValidationCode { get; private set; }
+        public HttpRequest.ValidationCode ValidationCode { get; private set; }
         
-        public InvalidHttpRequestException(HttpRequest.HttpRequestValidation validation) : this(validation.ToString())
+        public InvalidHttpRequestException(HttpRequest.ValidationCode validation) : this(validation.ToString())
         {
             ValidationCode = validation;
         }
