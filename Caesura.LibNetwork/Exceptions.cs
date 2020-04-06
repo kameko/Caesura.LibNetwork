@@ -33,4 +33,20 @@ namespace Caesura.LibNetwork
         public InvalidHttpHeaderException(string message, Exception inner) : base(message, inner) { }
         protected InvalidHttpHeaderException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
+    
+    [Serializable]
+    public class InvalidHttpRequestException : Exception
+    {
+        public HttpRequest.HttpRequestValidation ValidationCode { get; private set; }
+        
+        public InvalidHttpRequestException(HttpRequest.HttpRequestValidation validation) : this(validation.ToString())
+        {
+            ValidationCode = validation;
+        }
+        
+        public InvalidHttpRequestException() { }
+        public InvalidHttpRequestException(string message) : base(message) { }
+        public InvalidHttpRequestException(string message, Exception inner) : base(message, inner) { }
+        protected InvalidHttpRequestException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+    }
 }

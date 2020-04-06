@@ -20,14 +20,104 @@ namespace Caesura.LibNetwork
         
         public HttpRequest(string line)
         {
-            Resource = null!;
-            // TODO:
+            IsValid  = TryValidate(line, out var kind, out var resource, out var version);
+            Kind     = kind;
+            Resource = resource;
+            Version  = version;
+        }
+        
+        public static bool TryValidate(string request, out HttpRequestKind kind, out Uri resource, out HttpVersion version)
+        {
+            var result = Validate(request, out kind, out resource, out version);
+            return result == HttpRequestValidation.Valid;
+        }
+        
+        public static void ValidateOrThrow(string request, out HttpRequestKind kind, out Uri resource, out HttpVersion version)
+        {
+            var result = Validate(request, out kind, out resource, out version);
+            if (result != HttpRequestValidation.Valid)
+            {
+                throw new InvalidHttpRequestException(result);
+            }
+        }
+        
+        public static HttpRequestValidation Validate(string request, out HttpRequestKind kind, out Uri resource, out HttpVersion version)
+        {
+            var elements = request.Split(' ');
+            
+            kind = elements.Length > 0 ? ParseHttpRequestKind(elements[0]) : HttpRequestKind.Unknown;
+            if (kind == HttpRequestKind.Unknown)
+            {
+                
+                resource = new Uri("/unknown", UriKind.RelativeOrAbsolute);
+                version  = HttpVersion.Unknown;
+                return HttpRequestValidation.RequestUnknown;
+            }
+            
+            if (elements.Length > 1)
+            {
+                var uri_success = Uri.TryCreate(elements[1], UriKind.RelativeOrAbsolute, out resource!);
+                if (!uri_success)
+                {
+                    version  = HttpVersion.Unknown;
+                    return HttpRequestValidation.InvalidResource;
+                }
+            }
+            else
+            {
+                resource = new Uri("/unknown", UriKind.RelativeOrAbsolute);
+                version  = HttpVersion.Unknown;
+                return HttpRequestValidation.NoResource;
+            }
+            
+            if (elements.Length > 2)
+            {
+                version = ParseHttpVersion(elements[2]);
+                if (version == HttpVersion.Unknown)
+                {
+                    return HttpRequestValidation.UnknownVersion;
+                }
+            }
+            else
+            {
+                version  = HttpVersion.Unknown;
+                return HttpRequestValidation.NoVersion;
+            }
+            
+            return HttpRequestValidation.Valid;
         }
         
         private static HttpRequestKind ParseHttpRequestKind(string request)
         {
             var success = Enum.TryParse<HttpRequestKind>(request, true, out var result);
             return success ? result : HttpRequestKind.Unknown;
+        }
+        
+        private static HttpVersion ParseHttpVersion(string ver)
+        {
+            return ver.ToUpper() switch
+            {
+                "HTTP/0.9" => HttpVersion.HTTP0_9,
+                "HTTP/1"   => HttpVersion.HTTP1_0,
+                "HTTP/1.0" => HttpVersion.HTTP1_0,
+                "HTTP/1.1" => HttpVersion.HTTP1_1,
+                "HTTP/2"   => HttpVersion.HTTP2,
+                "HTTP/2.0" => HttpVersion.HTTP2,
+                "HTTP/3"   => HttpVersion.HTTP3,
+                "HTTP/3.0" => HttpVersion.HTTP3,
+                _          => HttpVersion.Unknown
+            };
+        }
+        
+        public enum HttpRequestValidation
+        {
+            Unknown         = 0,
+            Valid           = 1,
+            RequestUnknown  = 2,
+            NoResource      = 3,
+            InvalidResource = 4,
+            NoVersion       = 5,
+            UnknownVersion  = 6,
         }
     }
 }
