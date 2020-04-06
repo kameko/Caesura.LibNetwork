@@ -9,18 +9,29 @@ namespace Caesura.LibNetwork
     public class HttpResponseSession
     {
         private CancellationToken _token;
-        private NetworkStream _stream;
+        private TcpSession _session;
         
-        public HttpResponseSession(CancellationToken token, NetworkStream stream)
+        internal HttpResponseSession(CancellationToken token, TcpSession session)
         {
             _token  = token;
-            _stream = stream;
+            _session = session;
         }
         
         public async Task Respond(HttpResponse response)
         {
-            var bytes = response.ToBytes();
-            await _stream.WriteAsync(bytes, _token);
+            if (!_session.Active)
+            {
+                throw new InvalidOperationException("Session is no longer active.");
+            }
+            
+            var bytes  = response.ToBytes();
+            var stream = _session.Client.GetStream();
+            await stream.WriteAsync(bytes, _token);
+        }
+        
+        public void Close()
+        {
+            _session.Close();
         }
     }
 }

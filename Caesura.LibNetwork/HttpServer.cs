@@ -263,7 +263,7 @@ namespace Caesura.LibNetwork
             var token            = Canceller!.Token;
             var stream           = session.Client.GetStream();
             var request          = NetworkSerialization.GetRequest(token, Config, stream);
-            var response_session = new HttpResponseSession(token, stream);
+            var response_session = new HttpResponseSession(token, session);
             
             if (request.IsValid)
             {
