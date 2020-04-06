@@ -3,22 +3,10 @@ namespace Caesura.LibNetwork
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Net;
-    using System.Net.Http;
     using System.Net.Sockets;
-    
-    // TODO: events for GET, DELETE, POST, PUT and PATCH here.
-    // Also an event that triggers for all of them. And make
-    // them async.
-    // Also an event for unrecognized request names. Not an
-    // outright error, but something to be informed of.
-    // Also something to handle exceptions, both critical and
-    // non-critical (network errors).
     
     public class HttpServer : IHttpServer
     {
@@ -28,6 +16,19 @@ namespace Caesura.LibNetwork
         private List<TcpSession> Sessions;
         
         public event Func<HttpRequest, HttpResponseSession, Task> OnGET;
+        public event Func<HttpRequest, HttpResponseSession, Task> OnDELETE;
+        public event Func<HttpRequest, HttpResponseSession, Task> OnPUT;
+        public event Func<HttpRequest, HttpResponseSession, Task> OnPOST;
+        public event Func<HttpRequest, HttpResponseSession, Task> OnPATCH;
+        public event Func<HttpRequest, HttpResponseSession, Task> OnHEAD;
+        public event Func<HttpRequest, HttpResponseSession, Task> OnTRACE;
+        public event Func<HttpRequest, HttpResponseSession, Task> OnOPTIONS;
+        public event Func<HttpRequest, HttpResponseSession, Task> OnCONNECT;
+        public event Func<HttpRequest, HttpResponseSession, Task> OnAnyRequest;
+        public event Func<HttpRequest, HttpResponseSession, Task> OnUnknownRequest;
+        public event Func<HttpRequest, HttpResponseSession, Task> OnInvalidRequest;
+        public event Action<Exception> OnUnhandledException;
+        public event Action<int> OnSocketException;
         
         public HttpServer(LibNetworkConfig config, IPAddress ip, int port)
         {
@@ -36,7 +37,21 @@ namespace Caesura.LibNetwork
             Listener  = new TcpListener(ip, nport);
             Sessions  = new List<TcpSession>();
             
-            OnGET = delegate { return Task.CompletedTask; };
+            OnGET            = delegate { return Task.CompletedTask; };
+            OnDELETE         = delegate { return Task.CompletedTask; };
+            OnPUT            = delegate { return Task.CompletedTask; };
+            OnPOST           = delegate { return Task.CompletedTask; };
+            OnPATCH          = delegate { return Task.CompletedTask; };
+            OnHEAD           = delegate { return Task.CompletedTask; };
+            OnTRACE          = delegate { return Task.CompletedTask; };
+            OnOPTIONS        = delegate { return Task.CompletedTask; };
+            OnCONNECT        = delegate { return Task.CompletedTask; };
+            OnAnyRequest     = delegate { return Task.CompletedTask; };
+            OnUnknownRequest = delegate { return Task.CompletedTask; };
+            OnInvalidRequest = delegate { return Task.CompletedTask; };
+            
+            OnUnhandledException = delegate { };
+            OnSocketException    = delegate { };
         }
         
         public HttpServer(LibNetworkConfig config, string ip, int port) : this(config, IPAddress.Parse(ip), port)
@@ -53,11 +68,11 @@ namespace Caesura.LibNetwork
         {
             ValidateStart();
             return Task
-                .Run(() =>
+                .Run(async () =>
                 {
                     ValidateStart();
                     Listener.Start();
-                    ConnectionWaiter();
+                    await ConnectionWaiter();
                 })
                 .ContinueWith(t =>
                 {
@@ -109,7 +124,7 @@ namespace Caesura.LibNetwork
             }
         }
         
-        private Task ConnectionWaiter()
+        private async Task ConnectionWaiter()
         {
             var cancelled = Canceller?.IsCancellationRequested ?? true;
             while (!cancelled)
@@ -120,58 +135,70 @@ namespace Caesura.LibNetwork
                     continue;
                 }
                 
+                TcpSession? session = null;
                 try
                 {
                     var client = Listener.AcceptTcpClient();
-                    var session = new TcpSession(client);
+                    session = new TcpSession(client);
                     
                     Sessions.Add(session);
-                    Task.Run(async () =>
-                    {
-                        await HandleSession(session);
-                    })
-                    .ContinueWith(t =>
-                    {
-                        if (t.IsFaulted)
-                        {
-                            // TODO: handle error
-                        }
-                        session.Client.Close();
-                        Sessions.Remove(session);
-                    });
+                    await HandleSession(session);
                 }
                 catch (SocketException se)
                 {
-                    // TODO: MSDN documentation for TcpListener.AcceptTcpClient():
-                    //   ``Use the ErrorCode property to obtain the specific error code.
-                    //     When you have obtained this code, you can refer to the Windows
-                    //     Sockets version 2 API error code documentation for a detailed
-                    //     description of the error. ,,
-                    // 
-                    throw new NotImplementedException("IMPLEMENT SOCKETEXCEPTION", se);
+                    OnSocketException(se.ErrorCode);
+                }
+                catch (Exception e)
+                {
+                    OnUnhandledException(e);
+                }
+                finally
+                {
+                    if (!(session is null))
+                    {
+                        session.Client.Close();
+                        Sessions.Remove(session);
+                    }
                 }
             }
-            return Task.CompletedTask;
         }
         
         private async Task HandleSession(TcpSession session)
         {
-            var token   = Canceller?.Token ?? (new CancellationTokenSource(Config.DefaultTimeoutMilliseconds)).Token;
-            var stream  = session.Client.GetStream();
-            var request = NetworkSerialization.GetRequest(token, Config, stream);
+            if (Canceller is null)
+            {
+                throw new InvalidOperationException("Http server has not been started yet.");
+            }
+            if (Canceller.IsCancellationRequested)
+            {
+                throw new InvalidOperationException("Http server has been cancelled.");
+            }
+            
+            var token            = Canceller.Token;
+            var stream           = session.Client.GetStream();
+            var request          = NetworkSerialization.GetRequest(token, Config, stream);
+            var response_session = new HttpResponseSession(token, stream);
             
             if (request.IsValid)
             {
-                var response_session = new HttpResponseSession(token, stream);
                 await (request.Kind switch
                 {
-                    HttpRequestKind.GET => OnGET(request, response_session),
-                    _                   => throw new NotImplementedException(),
+                    HttpRequestKind.GET     => OnGET(request, response_session),
+                    HttpRequestKind.DELETE  => OnDELETE(request, response_session),
+                    HttpRequestKind.PUT     => OnPUT(request, response_session),
+                    HttpRequestKind.POST    => OnPOST(request, response_session),
+                    HttpRequestKind.PATCH   => OnPATCH(request, response_session),
+                    HttpRequestKind.HEAD    => OnHEAD(request, response_session),
+                    HttpRequestKind.TRACE   => OnTRACE(request, response_session),
+                    HttpRequestKind.OPTIONS => OnOPTIONS(request, response_session),
+                    HttpRequestKind.CONNECT => OnCONNECT(request, response_session),
+                    _                       => OnUnknownRequest(request, response_session)
                 });
+                await OnAnyRequest(request, response_session);
             }
             else
             {
-                // TODO: call an event
+                await OnInvalidRequest(request, response_session);
             }
         }
         
