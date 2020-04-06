@@ -8,7 +8,7 @@ namespace Caesura.LibNetwork
     
     public static class HttpServers
     {
-        public const int DefaultIpAddress = 4988;
+        public const int DefaultPort = 4988;
         
         public static IHttpServer Create() // TODO: some kind of IP address class.
         {

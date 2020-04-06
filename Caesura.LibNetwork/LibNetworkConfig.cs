@@ -10,6 +10,7 @@ namespace Caesura.LibNetwork
         public int HeaderAmountLimit { get; set; }
         public int HeaderCharReadLimit { get; set; }
         public int BodyCharReadLimit { get; set; }
+        public int ConnectionTimeoutTicks { get; set; }
         public int DefaultTimeoutMilliseconds { get; set; }
         
         public LibNetworkConfig()
@@ -18,6 +19,7 @@ namespace Caesura.LibNetwork
             HeaderAmountLimit           = 100;
             HeaderCharReadLimit         = 1_048_576;
             BodyCharReadLimit           = int.MaxValue;
+            ConnectionTimeoutTicks      = 10_000;
             DefaultTimeoutMilliseconds  = 5_000;
         }
         

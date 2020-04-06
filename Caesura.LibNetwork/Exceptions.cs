@@ -16,6 +16,15 @@ namespace Caesura.LibNetwork
     */
     
     [Serializable]
+    public class UnreliableConnectionException : Exception
+    {
+        public UnreliableConnectionException() { }
+        public UnreliableConnectionException(string message) : base(message) { }
+        public UnreliableConnectionException(string message, Exception inner) : base(message, inner) { }
+        protected UnreliableConnectionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+    }
+    
+    [Serializable]
     public class InvalidHttpHeaderException : Exception
     {
         public HttpHeader.ValidationCode ValidationCode { get; private set; }

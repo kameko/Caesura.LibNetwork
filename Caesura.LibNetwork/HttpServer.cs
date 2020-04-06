@@ -32,20 +32,21 @@ namespace Caesura.LibNetwork
         
         public HttpServer(LibNetworkConfig config, IPAddress ip, int port)
         {
-            var nport = port <= 0 ? HttpServers.DefaultIpAddress : port;
+            var nport = port <= 0 ? HttpServers.DefaultPort : port;
             Config    = config;
             Listener  = new TcpListener(ip, nport);
             Sessions  = new List<TcpSession>();
             
-            OnGET            = delegate { return Task.CompletedTask; };
-            OnDELETE         = delegate { return Task.CompletedTask; };
-            OnPUT            = delegate { return Task.CompletedTask; };
-            OnPOST           = delegate { return Task.CompletedTask; };
-            OnPATCH          = delegate { return Task.CompletedTask; };
-            OnHEAD           = delegate { return Task.CompletedTask; };
-            OnTRACE          = delegate { return Task.CompletedTask; };
-            OnOPTIONS        = delegate { return Task.CompletedTask; };
-            OnCONNECT        = delegate { return Task.CompletedTask; };
+            OnGET     = delegate { return Task.CompletedTask; };
+            OnDELETE  = delegate { return Task.CompletedTask; };
+            OnPUT     = delegate { return Task.CompletedTask; };
+            OnPOST    = delegate { return Task.CompletedTask; };
+            OnPATCH   = delegate { return Task.CompletedTask; };
+            OnHEAD    = delegate { return Task.CompletedTask; };
+            OnTRACE   = delegate { return Task.CompletedTask; };
+            OnOPTIONS = delegate { return Task.CompletedTask; };
+            OnCONNECT = delegate { return Task.CompletedTask; };
+            
             OnAnyRequest     = delegate { return Task.CompletedTask; };
             OnUnknownRequest = delegate { return Task.CompletedTask; };
             OnInvalidRequest = delegate { return Task.CompletedTask; };
@@ -64,19 +65,50 @@ namespace Caesura.LibNetwork
             
         }
         
+        public async Task EstablishConnection(HttpRequest request)
+        {
+            ValidateStart();
+            
+            TcpSession? session = null;
+            try
+            {
+                var client = new TcpClient();
+                session = new TcpSession(client, Config.ConnectionTimeoutTicks);
+                Sessions.Add(session);
+                
+                await client.ConnectAsync(request.Resource.Host, request.Resource.Port);
+                
+                var bytes = request.ToBytes();
+                var sent  = await client.Client.SendAsync(bytes, SocketFlags.Broadcast, Canceller!.Token);
+                if (sent < bytes.Length)
+                {
+                    throw new UnreliableConnectionException(
+                          $"Attempted to send {bytes.Length} bytes to {request.Resource.ToString()} "
+                        + $"but only sent {sent}."
+                    );
+                }
+            }
+            catch (Exception)
+            {
+                Sessions.Remove(session!);
+                session?.Dispose();
+                
+                throw;
+            }
+            
+        }
+        
         public Task StartAsync()
         {
             ValidateStart();
             return Task
                 .Run(async () =>
                 {
-                    ValidateStart();
                     Listener.Start();
-                    await ConnectionWaiter();
-                })
-                .ContinueWith(t =>
-                {
-                    Stop();
+                    await Task.WhenAll(
+                        ConnectionWaiter(),
+                        ConnectionTimeoutDetector()
+                    );
                 });
         }
         
@@ -84,7 +116,10 @@ namespace Caesura.LibNetwork
         {
             ValidateStart();
             Listener.Start();
-            Task.Run(ConnectionWaiter);
+            Task.WhenAll(
+                ConnectionWaiter(),
+                ConnectionTimeoutDetector()
+            );
         }
         
         public void Stop()
@@ -124,6 +159,25 @@ namespace Caesura.LibNetwork
             }
         }
         
+        private async Task ConnectionTimeoutDetector()
+        {
+            var cancelled = Canceller?.IsCancellationRequested ?? true;
+            while (!cancelled)
+            {
+                await Task.Delay(1_000);
+                
+                var sessions = new List<TcpSession>(Sessions);
+                foreach (var session in sessions)
+                {
+                    session.TickDown();
+                    if (!session.Active)
+                    {
+                        Sessions.Remove(session);
+                    }
+                }
+            }
+        }
+        
         private async Task ConnectionWaiter()
         {
             var cancelled = Canceller?.IsCancellationRequested ?? true;
@@ -131,7 +185,7 @@ namespace Caesura.LibNetwork
             {
                 if (Sessions.Count > Config.MaxConnections)
                 {
-                    Thread.Sleep(15);
+                    await Task.Delay(15);
                     continue;
                 }
                 
@@ -139,42 +193,42 @@ namespace Caesura.LibNetwork
                 try
                 {
                     var client = Listener.AcceptTcpClient();
-                    session = new TcpSession(client);
+                    session = new TcpSession(client, Config.ConnectionTimeoutTicks);
                     
                     Sessions.Add(session);
                     await HandleSession(session);
                 }
                 catch (SocketException se)
                 {
+                    if (!(session is null))
+                    {
+                        session.Client.Close();
+                        Sessions.Remove(session);
+                    }
                     OnSocketException(se.ErrorCode);
                 }
                 catch (Exception e)
-                {
-                    OnUnhandledException(e);
-                }
-                finally
                 {
                     if (!(session is null))
                     {
                         session.Client.Close();
                         Sessions.Remove(session);
                     }
+                    OnUnhandledException(e);
                 }
             }
         }
         
+        // TODO: we need a way to handle back-and-forth communication
+        // without killing the client after every request.
+        // I think we should run HandleSession in a loop in it's own
+        // task and maybe remove the call to it in ConnectionWaiter().
+        
         private async Task HandleSession(TcpSession session)
         {
-            if (Canceller is null)
-            {
-                throw new InvalidOperationException("Http server has not been started yet.");
-            }
-            if (Canceller.IsCancellationRequested)
-            {
-                throw new InvalidOperationException("Http server has been cancelled.");
-            }
+            ValidateStart();
             
-            var token            = Canceller.Token;
+            var token            = Canceller!.Token;
             var stream           = session.Client.GetStream();
             var request          = NetworkSerialization.GetRequest(token, Config, stream);
             var response_session = new HttpResponseSession(token, stream);
@@ -205,16 +259,6 @@ namespace Caesura.LibNetwork
         public void Dispose()
         {
             Stop();
-        }
-        
-        private class TcpSession
-        {
-            public TcpClient Client;
-            
-            public TcpSession(TcpClient client)
-            {
-                Client = client;
-            }
         }
     }
 }
