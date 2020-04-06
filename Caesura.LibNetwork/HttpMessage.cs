@@ -2,7 +2,13 @@
 namespace Caesura.LibNetwork
 {
     using System;
-    using System.Net;
+    
+    // TODO: need a way to construct a response message
+    //  - a status line which includes the status code and reason message 
+    //    (e.g., HTTP/1.1 200 OK, which indicates that the client's request succeeded)
+    //  - response header fields (e.g., Content-Type: text/html)
+    //  - an empty line
+    //  - an optional message body
     
     public class HttpMessage
     {
