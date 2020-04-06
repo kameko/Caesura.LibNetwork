@@ -3,6 +3,7 @@ namespace Caesura.LibNetwork
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Concurrent;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Net;
@@ -13,7 +14,7 @@ namespace Caesura.LibNetwork
         private LibNetworkConfig Config;
         private CancellationTokenSource? Canceller;
         private TcpListener Listener;
-        private List<TcpSession> Sessions;
+        private ConcurrentDictionary<Guid, TcpSession> Sessions;
         
         public event Func<HttpRequest, HttpResponseSession, Task> OnGET;
         public event Func<HttpRequest, HttpResponseSession, Task> OnDELETE;
@@ -35,7 +36,7 @@ namespace Caesura.LibNetwork
             var nport = port <= 0 ? HttpServers.DefaultPort : port;
             Config    = config;
             Listener  = new TcpListener(ip, nport);
-            Sessions  = new List<TcpSession>();
+            Sessions  = new ConcurrentDictionary<Guid, TcpSession>();
             
             OnGET     = delegate { return Task.CompletedTask; };
             OnDELETE  = delegate { return Task.CompletedTask; };
@@ -74,7 +75,7 @@ namespace Caesura.LibNetwork
             {
                 var client = new TcpClient();
                 session = new TcpSession(client, Config.ConnectionTimeoutTicks);
-                Sessions.Add(session);
+                Sessions.GetOrAdd(session.Id, session);
                 
                 await client.ConnectAsync(request.Resource.Host, request.Resource.Port);
                 
@@ -90,8 +91,11 @@ namespace Caesura.LibNetwork
             }
             catch (Exception)
             {
-                Sessions.Remove(session!);
-                session?.Dispose();
+                if (!(session is null))
+                {
+                    Sessions.Remove(session.Id, out _);
+                    session.Close();
+                }
                 
                 throw;
             }
@@ -144,10 +148,10 @@ namespace Caesura.LibNetwork
             Listener.Stop();
             Canceller.Cancel();
             
-            var sessions = new List<TcpSession>(Sessions);
-            foreach (var session in sessions)
+            var sessions = new List<KeyValuePair<Guid, TcpSession>>(Sessions);
+            foreach (var session_kvp in sessions)
             {
-                session.Client.Close();
+                session_kvp.Value.Client.Close();
             }
         }
         
@@ -179,13 +183,13 @@ namespace Caesura.LibNetwork
             {
                 await Task.Delay(1_000);
                 
-                var sessions = new List<TcpSession>(Sessions);
-                foreach (var session in sessions)
+                var sessions = new List<KeyValuePair<Guid, TcpSession>>(Sessions);
+                foreach (var session_kvp in sessions)
                 {
-                    session.TickDown();
-                    if (!session.Active)
+                    session_kvp.Value.TickDown();
+                    if (!session_kvp.Value.Active)
                     {
-                        Sessions.Remove(session);
+                        Sessions.Remove(session_kvp.Key, out _);
                     }
                 }
             }
@@ -208,26 +212,27 @@ namespace Caesura.LibNetwork
                     var client = Listener.AcceptTcpClient();
                     session = new TcpSession(client, Config.ConnectionTimeoutTicks);
                     
-                    Sessions.Add(session);
+                    Sessions.GetOrAdd(session.Id, session);
                     await HandleSession(session);
                 }
                 catch (SocketException se)
                 {
-                    if (!(session is null))
-                    {
-                        session.Client.Close();
-                        Sessions.Remove(session);
-                    }
+                    OnAnyException();
                     OnSocketException(se.ErrorCode);
                 }
                 catch (Exception e)
                 {
+                    OnAnyException();
+                    OnUnhandledException(e);
+                }
+                
+                void OnAnyException()
+                {
                     if (!(session is null))
                     {
-                        session.Client.Close();
-                        Sessions.Remove(session);
+                        Sessions.Remove(session.Id, out _);
+                        session.Close();
                     }
-                    OnUnhandledException(e);
                 }
             }
         }
@@ -236,6 +241,19 @@ namespace Caesura.LibNetwork
         // without killing the client after every request.
         // I think we should run HandleSession in a loop in it's own
         // task and maybe remove the call to it in ConnectionWaiter().
+        
+        private async Task HandleSessionSafely(TcpSession session)
+        {
+            try
+            {
+                await HandleSession(session);
+            }
+            catch (Exception)
+            {
+                Sessions.Remove(session.Id, out _);
+                session.Close();
+            }
+        }
         
         private async Task HandleSession(TcpSession session)
         {

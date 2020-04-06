@@ -13,12 +13,14 @@ namespace Caesura.LibNetwork
         public bool Active { get; private set; }
         public int TicksLeft { get; private set; }
         public TcpClient Client { get; private set; }
+        public Guid Id { get; private set; }
         
         public TcpSession(TcpClient client, int ticks)
         {
             starter_ticks = ticks;
             Active        = true;
             Client        = client;
+            Id            = Guid.NewGuid();
         }
         
         public void TickDown()
