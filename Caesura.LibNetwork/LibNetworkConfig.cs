@@ -17,20 +17,22 @@ namespace Caesura.LibNetwork
         public JsonSerializerOptions JsonOptions { get; set; }
         // HTTP server config
         public int MaxConnections { get; set; }
-        public int ReadByteBufferSize { get; set; }
+        public int HeaderCharReadLimit { get; set; }
+        public int BodyCharReadLimit { get; set; }
         
         public LibNetworkConfig()
         {
-            HttpHandler        = null;
-            CompletionOption   = HttpCompletionOption.ResponseContentRead;
-            DisposeHttpHandler = true;
-            JsonOptions        = new JsonSerializerOptions()
+            HttpHandler         = null;
+            CompletionOption    = HttpCompletionOption.ResponseContentRead;
+            DisposeHttpHandler  = true;
+            JsonOptions         = new JsonSerializerOptions()
             {
-                WriteIndented  = true,
+                WriteIndented   = true,
             };
             
-            MaxConnections     = 20;
-            ReadByteBufferSize = 1024;
+            MaxConnections      = 20;
+            HeaderCharReadLimit = 1_048_576;
+            BodyCharReadLimit   = int.MaxValue;
         }
         
         public static LibNetworkConfig GetDefault()

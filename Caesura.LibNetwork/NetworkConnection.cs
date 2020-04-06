@@ -15,6 +15,9 @@ namespace Caesura.LibNetwork
     // TODO: Some sort of object full of events that this class can
     // use for hooking a logger to.
     
+    // NOTICE: probably gonna remove this and put this all in HttpServer
+    // to act as a two-way communication system.
+    
     public class NetworkConnection : IDisposable
     {
         private LibNetworkConfig Config;

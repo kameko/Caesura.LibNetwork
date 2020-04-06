@@ -1,18 +1,33 @@
 
 namespace Caesura.LibNetwork
 {
-    public enum HttpRequest
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
+    
+    public class HttpRequest
     {
-        None    = 0,
-        Unknown = 1,
-        GET     = 2,
-        DELETE  = 3,
-        PUT     = 4,
-        POST    = 5,
-        PATCH   = 6,
-        HEAD    = 7,
-        TRACE   = 8,
-        OPTIONS = 9,
-        CONNECT = 10,
+        public HttpRequestKind Kind { get; set; }
+        public Uri Resource { get; set; }
+        public HttpVersion Version { get; set; }
+        public bool IsValid { get; private set; }
+        
+        public HttpRequest()
+        {
+            Resource = new Uri("/unknown", UriKind.RelativeOrAbsolute);
+        }
+        
+        public HttpRequest(string line)
+        {
+            Resource = null!;
+            // TODO:
+        }
+        
+        private static HttpRequestKind ParseHttpRequestKind(string request)
+        {
+            var success = Enum.TryParse<HttpRequestKind>(request, true, out var result);
+            return success ? result : HttpRequestKind.Unknown;
+        }
     }
 }

@@ -4,6 +4,8 @@ namespace Caesura.LibNetwork
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Net;
@@ -51,9 +53,12 @@ namespace Caesura.LibNetwork
                 {
                     ValidateStart();
                     Listener.Start();
-                    Task.WaitAll(ConnectionWaiter(), ConnectionHandler());
+                    ConnectionWaiter();
                 })
-                .ContinueWith(t => Stop());
+                .ContinueWith(t =>
+                {
+                    Stop();
+                });
         }
         
         public void Start()
@@ -61,7 +66,6 @@ namespace Caesura.LibNetwork
             ValidateStart();
             Listener.Start();
             Task.Run(ConnectionWaiter);
-            Task.Run(ConnectionHandler);
         }
         
         public void Stop()
@@ -111,9 +115,22 @@ namespace Caesura.LibNetwork
                 {
                     var client = Listener.AcceptTcpClient();
                     var session = new TcpSession(client);
+                    
                     Sessions.Add(session);
+                    Task.Run(() =>
+                    {
+                        HandleSession(session);
+                    })
+                    .ContinueWith(t =>
+                    {
+                        if (t.IsFaulted)
+                        {
+                            // TODO: handle error
+                        }
+                        Sessions.Remove(session);
+                    });
                 }
-                catch (SocketException)
+                catch (SocketException se)
                 {
                     // TODO: MSDN documentation for TcpListener.AcceptTcpClient():
                     //   ``Use the ErrorCode property to obtain the specific error code.
@@ -121,28 +138,100 @@ namespace Caesura.LibNetwork
                     //     Sockets version 2 API error code documentation for a detailed
                     //     description of the error. ,,
                     // 
+                    throw new NotImplementedException("IMPLEMENT SOCKETEXCEPTION", se);
                 }
             }
             return Task.CompletedTask;
         }
         
-        private Task ConnectionHandler()
+        private Task HandleSession(TcpSession session)
         {
-            var sessions = new List<TcpSession>(Sessions);
-            foreach (var session in sessions)
+            var sb      = new StringBuilder();
+            var input   = session.Client.GetStream();
+            var output  = session.Client.GetStream();
+            
+            var request = GetRequest(input, sb);
+            var headers = GetHeaders(input, sb);
+            var body    = GetBody(input, sb);
+            var message = new HttpMessage(request, headers, body);
+            
+            if (message.IsValid)
             {
-                HandleSession(session);
+                
+                // TODO: invoke callbacks
             }
             
             return Task.CompletedTask;
         }
         
-        private Task HandleSession(TcpSession session)
+        private HttpRequest GetRequest(NetworkStream stream, StringBuilder sb)
         {
-            var inputStream  = session.Client.GetStream();
-            var outputStream = session.Client.GetStream();
+            var request_str = ReadLine(stream, sb, Config.HeaderCharReadLimit);
+            var request     = new HttpRequest(request_str);
             
-            return Task.CompletedTask;
+            return request;
+        }
+        
+        private HttpHeaders GetHeaders(NetworkStream stream, StringBuilder sb)
+        {
+            var headers = new HttpHeaders();
+            
+            var line = string.Empty;
+            while (true)
+            {
+                line = ReadLine(stream, sb, Config.HeaderCharReadLimit);
+                
+                if (line == "\r\n")
+                {
+                    break;
+                }
+                
+                var header = new HttpHeader(line);
+                headers.Add(header);
+            }
+            
+            return headers;
+        }
+        
+        private HttpBody GetBody(NetworkStream stream, StringBuilder sb)
+        {
+            sb.Clear();
+            
+            char current_char = '\0';
+            int current_int   = 0;
+            while (current_int > -1)
+            {
+                current_int  = stream.ReadByte();
+                current_char = Convert.ToChar(current_int);
+                sb.Append(current_char);
+            }
+            
+            var body = new HttpBody(sb.ToString());
+            return body;
+        }
+        
+        private string ReadLine(NetworkStream stream, StringBuilder sb, int limit)
+        {
+            sb.Clear();
+            
+            char last_char    = '\0';
+            char current_char = '\0';
+            int current_int   = 0;
+            while (current_int > -1 && current_int < limit)
+            {
+                current_int  = stream.ReadByte();
+                current_char = Convert.ToChar(current_int);
+                
+                sb.Append(current_char);
+                
+                if (last_char == '\r' && current_char == '\n')
+                {
+                    break;
+                }
+                
+                last_char = current_char;
+            }
+            return sb.ToString();
         }
         
         public void Dispose()

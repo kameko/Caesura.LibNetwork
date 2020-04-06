@@ -12,6 +12,7 @@ namespace Caesura.LibNetwork
         
         public string Body => raw_body;
         public bool HasBody => !(string.IsNullOrEmpty(raw_body) || string.IsNullOrWhiteSpace(raw_body));
+        public bool IsValid => true;
         
         public HttpBody()
         {

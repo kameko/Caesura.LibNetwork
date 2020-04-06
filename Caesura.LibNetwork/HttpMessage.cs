@@ -21,15 +21,34 @@ namespace Caesura.LibNetwork
         public bool IsClientErrorStatusCode   => CheckStatusCodeInRange(400, 500);
         public bool IsServerErrorStatusCode   => CheckStatusCodeInRange(500, 600);
         
+        public bool IsValid    => Request.IsValid && Headers.IsValid && Body.IsValid;
         public int HeaderCount => Headers.Count;
         public bool HasHeaders => Headers.HasHeaders;
         public bool HasBody    => Body.HasBody;
         
         public HttpMessage()
         {
+            Request = new HttpRequest();
             Headers = new HttpHeaders();
             Body    = new HttpBody();
         }
+        
+        public HttpMessage(HttpStatusCode status, HttpRequest request, HttpHeaders headers, HttpBody body)
+        {
+            StatusCode = status;
+            Request    = request;
+            Headers    = headers;
+            Body       = body;
+        }
+        
+        public HttpMessage(HttpRequest request, HttpHeaders headers, HttpBody body)
+            : this(HttpStatusCode.OK, request, headers, body) { }
+            
+        public HttpMessage(HttpStatusCode status, HttpRequest request, HttpHeaders headers)
+            : this(status, request, headers, new HttpBody()) { }
+            
+        public HttpMessage(HttpRequest request, HttpHeaders headers)
+            : this(HttpStatusCode.OK, request, headers, new HttpBody()) { }
         
         private bool CheckStatusCodeInRange(int begin, int end)
         {
