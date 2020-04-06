@@ -67,7 +67,7 @@ namespace Caesura.LibNetwork
         
         public async Task EstablishConnection(HttpRequest request)
         {
-            ValidateStart();
+            ValidateRuntime();
             
             TcpSession? session = null;
             try
@@ -98,28 +98,36 @@ namespace Caesura.LibNetwork
             
         }
         
-        public Task StartAsync()
+        public async Task StartAsync()
         {
             ValidateStart();
-            return Task
-                .Run(async () =>
-                {
-                    Listener.Start();
-                    await Task.WhenAll(
-                        ConnectionWaiter(),
-                        ConnectionTimeoutDetector()
-                    );
-                });
+            
+            Listener.Start();
+            await Task.WhenAll(
+                ConnectionWaiter(),
+                ConnectionTimeoutDetector()
+            );
         }
         
         public void Start()
         {
             ValidateStart();
+            
             Listener.Start();
-            Task.WhenAll(
+            var task = Task.WhenAll(
                 ConnectionWaiter(),
                 ConnectionTimeoutDetector()
             );
+            
+            while (!Canceller!.IsCancellationRequested)
+            {
+                Thread.Sleep(15);
+                if (task.IsFaulted)
+                {
+                    Stop();
+                    throw task.Exception!;
+                }
+            }
         }
         
         public void Stop()
@@ -149,7 +157,12 @@ namespace Caesura.LibNetwork
             {
                 Canceller = new CancellationTokenSource();
             }
-            else if (Canceller.IsCancellationRequested)
+            ValidateRuntime();
+        }
+        
+        private void ValidateRuntime()
+        {
+            if (Canceller!.IsCancellationRequested)
             {
                 throw new InvalidOperationException("HTTP server already cancelled.");
             }
@@ -226,7 +239,8 @@ namespace Caesura.LibNetwork
         
         private async Task HandleSession(TcpSession session)
         {
-            ValidateStart();
+            ValidateRuntime();
+            session.ResetTicks();
             
             var token            = Canceller!.Token;
             var stream           = session.Client.GetStream();
