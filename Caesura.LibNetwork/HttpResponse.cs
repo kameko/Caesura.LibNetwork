@@ -74,7 +74,7 @@ namespace Caesura.LibNetwork
         
         public static ValidationCode Validate(string response, out HttpVersion version, out HttpStatusCode status)
         {
-            var elements = response.Split(' ');
+            var elements = response?.Split(' ') ?? new string[0];
             
             if (elements.Length > 0)
             {

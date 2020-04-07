@@ -96,7 +96,7 @@ namespace Caesura.LibNetwork
             
             (string Name, string Body) SplitHeaderAndSanitize(string x)
             {
-                var split = header.Split(':', 2);
+                var split = header?.Split(':', 2) ?? new string[0];
                 var name = split[0];
                 var body = split[1].TrimStart();
                 return (name, body);

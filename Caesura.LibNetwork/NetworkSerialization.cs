@@ -40,7 +40,7 @@ namespace Caesura.LibNetwork
             HttpHeaders headers = new HttpHeaders();
             
             var limiter = config.HeaderAmountLimit;
-            while (limiter < config.HeaderAmountLimit && !reader.EndOfStream)
+            while (limiter < config.HeaderAmountLimit && !reader.EndOfStream && !token.IsCancellationRequested)
             {
                 var header_line = reader.ReadLine();
                 if (!string.IsNullOrEmpty(header_line))

@@ -80,7 +80,7 @@ namespace Caesura.LibNetwork
         
         public static ValidationCode Validate(string request, out HttpRequestKind kind, out Uri resource, out HttpVersion version)
         {
-            var elements = request.Split(' ');
+            var elements = request?.Split(' ') ?? new string[0];
             
             kind = elements.Length > 0 ? HttpRequestKindUtils.ParseHttpRequestKind(elements[0]) : HttpRequestKind.Unknown;
             if (kind == HttpRequestKind.Unknown)
