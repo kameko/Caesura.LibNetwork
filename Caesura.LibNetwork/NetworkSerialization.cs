@@ -4,12 +4,10 @@ namespace Caesura.LibNetwork
     using System;
     using System.IO;
     using System.Threading;
-    using System.Text;
-    using System.Net.Sockets;
     
     public class NetworkSerialization
     {
-        internal static HttpResponse DeserializeHttpResponse(StreamReader reader, LibNetworkConfig config, CancellationToken token)
+        public static HttpResponse DeserializeHttpResponse(StreamReader reader, LibNetworkConfig config, CancellationToken token)
         {
             if (reader.EndOfStream)
             {
@@ -17,13 +15,13 @@ namespace Caesura.LibNetwork
             }
             
             var response_line = reader.ReadLine();
-            var message  = DeserializeHttpMessage(reader, config, token);
-            var response = new HttpResponse(response_line!, message);
+            var message       = DeserializeHttpMessage(reader, config, token);
+            var response      = new HttpResponse(response_line!, message);
             
             return response;
         }
         
-        internal static HttpRequest DeserializeHttpRequest(StreamReader reader, LibNetworkConfig config, CancellationToken token)
+        public static HttpRequest DeserializeHttpRequest(StreamReader reader, LibNetworkConfig config, CancellationToken token)
         {
             if (reader.EndOfStream)
             {
@@ -31,13 +29,13 @@ namespace Caesura.LibNetwork
             }
             
             var request_line = reader.ReadLine();
-            var message = DeserializeHttpMessage(reader, config, token);
-            var request = new HttpRequest(request_line!, message);
+            var message      = DeserializeHttpMessage(reader, config, token);
+            var request      = new HttpRequest(request_line!, message);
             
             return request;
         }
         
-        internal static HttpMessage DeserializeHttpMessage(StreamReader reader, LibNetworkConfig config, CancellationToken token)
+        public static HttpMessage DeserializeHttpMessage(StreamReader reader, LibNetworkConfig config, CancellationToken token)
         {
             HttpHeaders headers = new HttpHeaders();
             
@@ -58,7 +56,7 @@ namespace Caesura.LibNetwork
                 limiter--;
             }
             
-            var body_lines = reader.ReadToEnd();
+            var body_lines = reader.EndOfStream ? string.Empty : reader.ReadToEnd();
             var body       = new HttpBody(body_lines);
             var message    = new HttpMessage(headers, body);
             
