@@ -2,10 +2,12 @@
 namespace Caesura.LibNetwork
 {
     using System;
+    using System.Net;
     
     public class LibNetworkConfig
     {
-        // HTTP server config
+        public IPAddress IP { get; set; }
+        public int Port { get; set; }
         public int MaxConnections { get; set; }
         public int HeaderAmountLimit { get; set; }
         public int HeaderCharReadLimit { get; set; }
@@ -15,6 +17,8 @@ namespace Caesura.LibNetwork
         
         public LibNetworkConfig()
         {
+            IP                          = IPAddress.Any;
+            Port                        = 4988;
             MaxConnections              = 20;
             HeaderAmountLimit           = 100;
             HeaderCharReadLimit         = 1_048_576;

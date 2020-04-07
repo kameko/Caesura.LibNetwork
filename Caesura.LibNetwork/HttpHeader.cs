@@ -86,7 +86,8 @@ namespace Caesura.LibNetwork
             }
             else
             {
-                return ValidationCode.BodyDoesNotEndInCRLF;
+                // not required
+                // return ValidationCode.BodyDoesNotEndInCRLF;
             }
             
             return ValidationCode.Valid;

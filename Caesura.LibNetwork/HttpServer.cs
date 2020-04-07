@@ -6,6 +6,7 @@ namespace Caesura.LibNetwork
     using System.Collections.Concurrent;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.IO;
     using System.Net;
     using System.Net.Sockets;
     
@@ -31,11 +32,10 @@ namespace Caesura.LibNetwork
         public event Action<Exception> OnUnhandledException;
         public event Action<int> OnSocketException;
         
-        public HttpServer(LibNetworkConfig config, IPAddress ip, int port)
+        public HttpServer(LibNetworkConfig config)
         {
-            var nport = port <= 0 ? HttpServers.DefaultPort : port;
             Config    = config;
-            Listener  = new TcpListener(ip, nport);
+            Listener  = new TcpListener(config.IP, config.Port);
             Sessions  = new ConcurrentDictionary<Guid, TcpSession>();
             
             OnGET     = delegate { return Task.CompletedTask; };
@@ -54,16 +54,6 @@ namespace Caesura.LibNetwork
             
             OnUnhandledException = delegate { };
             OnSocketException    = delegate { };
-        }
-        
-        public HttpServer(LibNetworkConfig config, string ip, int port) : this(config, IPAddress.Parse(ip), port)
-        {
-            
-        }
-        
-        public HttpServer(LibNetworkConfig config, int port) : this(config, IPAddress.IPv6Loopback, port)
-        {
-            
         }
         
         public async Task EstablishConnection(HttpRequest request)
@@ -99,7 +89,6 @@ namespace Caesura.LibNetwork
                 
                 throw;
             }
-            
         }
         
         public async Task StartAsync()
@@ -152,7 +141,7 @@ namespace Caesura.LibNetwork
         {
             return Task.WhenAll(
                 ConnectionWaiter(),
-                SessionInactiveDetector(),
+                InactiveSessionDetector(),
                 SessionHandler()
             );
         }
@@ -209,7 +198,7 @@ namespace Caesura.LibNetwork
             }
         }
         
-        private async Task SessionInactiveDetector()
+        private async Task InactiveSessionDetector()
         {
             ValidateRuntime();
             var token = Canceller!.Token;
@@ -217,7 +206,7 @@ namespace Caesura.LibNetwork
             {
                 foreach (var session_kvp in Sessions)
                 {
-                    if (!session_kvp.Value.Active)
+                    if (session_kvp.Value.State == TcpSessionState.Closed)
                     {
                         Sessions.Remove(session_kvp.Key, out _);
                     }
@@ -254,7 +243,7 @@ namespace Caesura.LibNetwork
         {
             try
             {
-                if (!session.Active)
+                if (session.State == TcpSessionState.Closed)
                 {
                     throw new TcpSessionNotActiveException("Session is no longer active.");
                 }
@@ -275,8 +264,9 @@ namespace Caesura.LibNetwork
             ValidateRuntime();
             
             var token            = Canceller!.Token;
-            var stream           = session.Client.GetStream();
-            var request          = NetworkSerialization.GetRequest(token, Config, stream);
+            //var stream           = session.Client.GetStream();
+            //var request          = NetworkSerialization.GetRequest(token, Config, stream);
+            var request          = NetworkSerialization.DeserializeHttpRequest(session.Reader, Config, token);
             var response_session = new HttpResponseSession(token, session);
             
             if (request.IsValid)
