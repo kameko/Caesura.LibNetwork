@@ -264,8 +264,6 @@ namespace Caesura.LibNetwork
             ValidateRuntime();
             
             var token            = Canceller!.Token;
-            //var stream           = session.Client.GetStream();
-            //var request          = NetworkSerialization.GetRequest(token, Config, stream);
             var request          = NetworkSerialization.DeserializeHttpRequest(session.Reader, Config, token);
             var response_session = new HttpResponseSession(token, session);
             
