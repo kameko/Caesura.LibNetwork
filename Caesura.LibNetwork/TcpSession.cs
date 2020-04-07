@@ -5,32 +5,26 @@ namespace Caesura.LibNetwork
     using System.IO;
     using System.Net.Sockets;
     
-    public enum TcpSessionState
-    {
-        None   = 0,
-        Ready  = 1,
-        Closed = 2,
-    }
-    
-    internal class TcpSession : IDisposable
+    internal class TcpSession : ITcpSession
     {
         private int starter_ticks;
+        private TcpClient _client;
         public TcpSessionState State { get; private set; }
         public int TicksLeft { get; private set; }
         public Guid Id { get; private set; }
-        public TcpClient Client { get; private set; }
         public StreamReader Reader { get; private set; }
         public StreamWriter Writer { get; private set; }
+        public bool DataAvailable => _client.GetStream().DataAvailable;
         
         public TcpSession(TcpClient client, int ticks)
         {
+            _client       = client;
             starter_ticks = ticks;
             TicksLeft     = ticks;
             State         = TcpSessionState.Ready;
             Id            = Guid.NewGuid();
-            Client        = client;
-            Reader        = new StreamReader(Client.GetStream());
-            Writer        = new StreamWriter(Client.GetStream());
+            Reader        = new StreamReader(_client.GetStream());
+            Writer        = new StreamWriter(_client.GetStream());
         }
         
         public void TickDown()
@@ -56,7 +50,7 @@ namespace Caesura.LibNetwork
         public void Close()
         {
             State = TcpSessionState.Closed;
-            Client.Close();
+            _client.Close();
         }
         
         public void Dispose()

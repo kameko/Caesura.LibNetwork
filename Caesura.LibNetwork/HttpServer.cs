@@ -133,7 +133,7 @@ namespace Caesura.LibNetwork
             
             foreach (var session_kvp in Sessions)
             {
-                session_kvp.Value.Client.Close();
+                session_kvp.Value.Close();
             }
         }
         
@@ -224,7 +224,7 @@ namespace Caesura.LibNetwork
             {
                 foreach (var session_kvp in Sessions)
                 {
-                    if (session_kvp.Value.Client.GetStream().DataAvailable)
+                    if (session_kvp.Value.DataAvailable)
                     {
                         session_kvp.Value.ResetTicks();
                         await HandleSessionSafely(session_kvp.Value);
