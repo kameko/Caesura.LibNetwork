@@ -36,7 +36,9 @@ namespace Caesura.LibNetwork.Tests
             input.AutoFlush = true;
             
             var request1  = new HttpRequest(
-                "GET /some/resource.json HTTP/1.1",
+                HttpRequestKind.GET,
+                "/some/resource.json",
+                HttpVersion.HTTP1_1,
                 new HttpMessage(
                     new HttpHeaders()
                     {

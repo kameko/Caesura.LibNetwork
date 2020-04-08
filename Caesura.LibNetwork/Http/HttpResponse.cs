@@ -26,7 +26,7 @@ namespace Caesura.LibNetwork.Http
             Message = new HttpMessage();
         }
         
-        public HttpResponse(string line, IHttpMessage message)
+        internal HttpResponse(string line, IHttpMessage message)
         {
             is_valid   = TryValidate(line, out var version, out var status);
             Version    = version;
@@ -39,6 +39,7 @@ namespace Caesura.LibNetwork.Http
             Version    = version;
             StatusCode = code;
             Message    = message;
+            is_valid   = true;
         }
         
         public static HttpResponse FromStream(StreamReader reader, int header_limit, CancellationToken token)

@@ -23,7 +23,7 @@ namespace Caesura.LibNetwork.Http
             Message  = new HttpMessage();
         }
         
-        public HttpRequest(string line, IHttpMessage message)
+        internal HttpRequest(string line, IHttpMessage message)
         {
             is_valid = TryValidate(line, out var kind, out var resource, out var version);
             Kind     = kind;
@@ -38,6 +38,7 @@ namespace Caesura.LibNetwork.Http
             Resource = resource;
             Version  = version;
             Message  = message;
+            is_valid = true;
         }
         
         public HttpRequest(HttpRequestKind kind, string resource, HttpVersion version, IHttpMessage message)
@@ -46,6 +47,7 @@ namespace Caesura.LibNetwork.Http
             Resource = new Uri(resource, UriKind.RelativeOrAbsolute);
             Version  = version;
             Message  = message;
+            is_valid = true;
         }
         
         public static HttpRequest FromStream(StreamReader reader, int header_limit, CancellationToken token)
