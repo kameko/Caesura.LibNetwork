@@ -9,7 +9,7 @@ namespace Caesura.LibNetwork
     
     internal class TcpSession : ITcpSession
     {
-        private int starter_ticks;
+        private int _starter_ticks;
         private TcpClient _client;
         private StreamWriter _writer;
         public TcpSessionState State { get; private set; }
@@ -20,13 +20,13 @@ namespace Caesura.LibNetwork
         
         public TcpSession(TcpClient client, int ticks)
         {
-            starter_ticks = ticks;
-            _client       = client;
-            _writer       = new StreamWriter(_client.GetStream());
-            TicksLeft     = ticks;
-            State         = TcpSessionState.Ready;
-            Id            = Guid.NewGuid();
-            Output        = new StreamReader(_client.GetStream());
+            _starter_ticks = ticks;
+            _client        = client;
+            _writer        = new StreamWriter(_client.GetStream());
+            TicksLeft      = ticks;
+            State          = TcpSessionState.Ready;
+            Id             = Guid.NewGuid();
+            Output         = new StreamReader(_client.GetStream());
         }
         
         public async Task Write(string text, CancellationToken token)
@@ -41,7 +41,7 @@ namespace Caesura.LibNetwork
         
         public void TickDown()
         {
-            if (starter_ticks <= -1)
+            if (_starter_ticks <= -1)
             {
                 return;
             }
@@ -56,7 +56,7 @@ namespace Caesura.LibNetwork
         
         public void ResetTicks()
         {
-            TicksLeft = starter_ticks;
+            TicksLeft = _starter_ticks;
         }
         
         public void Close()

@@ -169,10 +169,7 @@ namespace Caesura.LibNetwork.Http
                 
                 try
                 {
-                    //var client = Listener.AcceptTcpClient();
-                    //var session = new TcpSession(client, Config.ConnectionTimeoutTicks);
                     var session = SessionFactory.AcceptTcpConnection();
-                    
                     Sessions.GetOrAdd(session.Id, session);
                 }
                 catch (SocketException se)

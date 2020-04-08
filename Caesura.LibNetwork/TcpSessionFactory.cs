@@ -18,7 +18,7 @@ namespace Caesura.LibNetwork
         
         public ITcpSession AcceptTcpConnection()
         {
-            var client = listener.AcceptTcpClient();;
+            var client  = listener.AcceptTcpClient();;
             var session = new TcpSession(client, Config.ConnectionTimeoutTicks);
             return session;
         }
@@ -47,6 +47,11 @@ namespace Caesura.LibNetwork
         public void Stop()
         {
             listener.Stop();
+        }
+        
+        public void Dispose()
+        {
+            Stop();
         }
     }
 }
