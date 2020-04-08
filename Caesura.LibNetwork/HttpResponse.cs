@@ -6,11 +6,11 @@ namespace Caesura.LibNetwork
     using System.Text;
     using System.IO;
     
-    public class HttpResponse
+    public class HttpResponse : IHttpResponse
     {
         public HttpVersion Version { get; private set; }
         public HttpStatusCode StatusCode { get; private set; }
-        public HttpMessage Message { get; set; }
+        public IHttpMessage Message { get; private set; }
         
         public bool IsInformationalStatusCode => HttpStatusCodeUtils.CheckStatusCodeInRange(StatusCode, 100, 200);
         public bool IsSuccessStatusCode       => HttpStatusCodeUtils.CheckStatusCodeInRange(StatusCode, 200, 300);
@@ -26,7 +26,7 @@ namespace Caesura.LibNetwork
             Message = new HttpMessage();
         }
         
-        public HttpResponse(string line, HttpMessage message)
+        public HttpResponse(string line, IHttpMessage message)
         {
             is_valid   = TryValidate(line, out var version, out var status);
             Version    = version;
@@ -34,7 +34,7 @@ namespace Caesura.LibNetwork
             Message    = message;
         }
         
-        public HttpResponse(HttpVersion version, HttpStatusCode code, HttpMessage message)
+        public HttpResponse(HttpVersion version, HttpStatusCode code, IHttpMessage message)
         {
             Version    = version;
             StatusCode = code;

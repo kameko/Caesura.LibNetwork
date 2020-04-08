@@ -20,18 +20,18 @@ namespace Caesura.LibNetwork
         private TcpListener Listener;
         private ConcurrentDictionary<Guid, TcpSession> Sessions;
         
-        public event Func<HttpRequest, HttpResponseSession, Task> OnGET;
-        public event Func<HttpRequest, HttpResponseSession, Task> OnDELETE;
-        public event Func<HttpRequest, HttpResponseSession, Task> OnPUT;
-        public event Func<HttpRequest, HttpResponseSession, Task> OnPOST;
-        public event Func<HttpRequest, HttpResponseSession, Task> OnPATCH;
-        public event Func<HttpRequest, HttpResponseSession, Task> OnHEAD;
-        public event Func<HttpRequest, HttpResponseSession, Task> OnTRACE;
-        public event Func<HttpRequest, HttpResponseSession, Task> OnOPTIONS;
-        public event Func<HttpRequest, HttpResponseSession, Task> OnCONNECT;
-        public event Func<HttpRequest, HttpResponseSession, Task> OnAnyRequest;
-        public event Func<HttpRequest, HttpResponseSession, Task> OnUnknownRequest;
-        public event Func<HttpRequest, HttpResponseSession, Task> OnInvalidRequest;
+        public event Func<IHttpRequest, HttpResponseSession, Task> OnGET;
+        public event Func<IHttpRequest, HttpResponseSession, Task> OnDELETE;
+        public event Func<IHttpRequest, HttpResponseSession, Task> OnPUT;
+        public event Func<IHttpRequest, HttpResponseSession, Task> OnPOST;
+        public event Func<IHttpRequest, HttpResponseSession, Task> OnPATCH;
+        public event Func<IHttpRequest, HttpResponseSession, Task> OnHEAD;
+        public event Func<IHttpRequest, HttpResponseSession, Task> OnTRACE;
+        public event Func<IHttpRequest, HttpResponseSession, Task> OnOPTIONS;
+        public event Func<IHttpRequest, HttpResponseSession, Task> OnCONNECT;
+        public event Func<IHttpRequest, HttpResponseSession, Task> OnAnyRequest;
+        public event Func<IHttpRequest, HttpResponseSession, Task> OnUnknownRequest;
+        public event Func<IHttpRequest, HttpResponseSession, Task> OnInvalidRequest;
         public event Action<Exception> OnUnhandledException;
         public event Action<int> OnSocketException;
         
@@ -267,7 +267,7 @@ namespace Caesura.LibNetwork
             ValidateRuntime();
             
             var token            = Canceller!.Token;
-            var request          = HttpRequest.FromStream(session.Output, Config.HeaderAmountLimit, token);
+            var request          = Config.Factories.HttpRequestFactory(Config, session.Output, token);
             var response_session = new HttpResponseSession(session, token);
             
             if (request.IsValid)

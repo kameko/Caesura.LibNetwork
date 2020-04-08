@@ -6,18 +6,18 @@ namespace Caesura.LibNetwork
     
     public interface IHttpServer : IDisposable
     {
-        event Func<HttpRequest, HttpResponseSession, Task> OnGET;
-        event Func<HttpRequest, HttpResponseSession, Task> OnDELETE;
-        event Func<HttpRequest, HttpResponseSession, Task> OnPUT;
-        event Func<HttpRequest, HttpResponseSession, Task> OnPOST;
-        event Func<HttpRequest, HttpResponseSession, Task> OnPATCH;
-        event Func<HttpRequest, HttpResponseSession, Task> OnHEAD;
-        event Func<HttpRequest, HttpResponseSession, Task> OnTRACE;
-        event Func<HttpRequest, HttpResponseSession, Task> OnOPTIONS;
-        event Func<HttpRequest, HttpResponseSession, Task> OnCONNECT;
-        event Func<HttpRequest, HttpResponseSession, Task> OnAnyRequest;
-        event Func<HttpRequest, HttpResponseSession, Task> OnUnknownRequest;
-        event Func<HttpRequest, HttpResponseSession, Task> OnInvalidRequest;
+        event Func<IHttpRequest, HttpResponseSession, Task> OnGET;
+        event Func<IHttpRequest, HttpResponseSession, Task> OnDELETE;
+        event Func<IHttpRequest, HttpResponseSession, Task> OnPUT;
+        event Func<IHttpRequest, HttpResponseSession, Task> OnPOST;
+        event Func<IHttpRequest, HttpResponseSession, Task> OnPATCH;
+        event Func<IHttpRequest, HttpResponseSession, Task> OnHEAD;
+        event Func<IHttpRequest, HttpResponseSession, Task> OnTRACE;
+        event Func<IHttpRequest, HttpResponseSession, Task> OnOPTIONS;
+        event Func<IHttpRequest, HttpResponseSession, Task> OnCONNECT;
+        event Func<IHttpRequest, HttpResponseSession, Task> OnAnyRequest;
+        event Func<IHttpRequest, HttpResponseSession, Task> OnUnknownRequest;
+        event Func<IHttpRequest, HttpResponseSession, Task> OnInvalidRequest;
         event Action<Exception> OnUnhandledException;
         event Action<int> OnSocketException;
         

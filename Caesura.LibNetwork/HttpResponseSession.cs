@@ -16,7 +16,7 @@ namespace Caesura.LibNetwork
             _token   = token;
         }
         
-        public async Task Respond(HttpResponse response)
+        public async Task Respond(IHttpResponse response)
         {
             if (!response.IsValid)
             {

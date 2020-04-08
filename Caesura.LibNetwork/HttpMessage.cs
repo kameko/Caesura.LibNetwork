@@ -6,10 +6,10 @@ namespace Caesura.LibNetwork
     using System.Text;
     using System.IO;
     
-    public class HttpMessage
+    public class HttpMessage : IHttpMessage
     {
-        public HttpHeaders Headers { get; private set; }
-        public HttpBody Body { get; private set; }
+        public IHttpHeaders Headers { get; private set; }
+        public IHttpBody Body { get; private set; }
         
         public bool IsValid    => Headers.IsValid && Body.IsValid;
         public int HeaderCount => Headers.Count;
@@ -22,13 +22,13 @@ namespace Caesura.LibNetwork
             Body    = new HttpBody();
         }
         
-        public HttpMessage(HttpHeaders headers, HttpBody body)
+        public HttpMessage(IHttpHeaders headers, IHttpBody body)
         {
             Headers    = headers;
             Body       = body;
         }
         
-        public HttpMessage(HttpHeaders headers)
+        public HttpMessage(IHttpHeaders headers)
             : this(headers, new HttpBody()) { }
         
         public static HttpMessage FromStream(StreamReader reader, int header_limit, CancellationToken token)

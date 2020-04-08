@@ -4,11 +4,10 @@ namespace Caesura.LibNetwork
     using System;
     using System.Text.Json;
     
-    public class HttpBody
+    public class HttpBody : IHttpBody
     {
         internal string raw_body;
         
-        public string Body => raw_body;
         public bool HasBody => !(string.IsNullOrEmpty(raw_body) || string.IsNullOrWhiteSpace(raw_body));
         public bool IsValid => true;
         
@@ -25,6 +24,33 @@ namespace Caesura.LibNetwork
         public string ToHttp()
         {
             return raw_body;
+        }
+        
+        public bool TryDeserialize<T>(out T item)
+        {
+            var result = Deserialize<T>();
+            item = result.IsOk ? result.Item : default!;
+            return result.IsOk;
+        }
+        
+        public T DeserializeOrThrow<T>()
+        {
+            var result = Deserialize<T>();
+            if (!result.IsOk)
+            {
+                if (result.Error is null)
+                {
+                    throw new InvalidOperationException("Deserialization was not successful.");
+                }
+                else
+                {
+                    throw result.Error;
+                }
+            }
+            else
+            {
+                return result.Item;
+            }
         }
         
         public DeserializationResult<T> Deserialize<T>()

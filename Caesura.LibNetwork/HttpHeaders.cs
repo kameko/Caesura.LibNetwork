@@ -7,10 +7,10 @@ namespace Caesura.LibNetwork
     using System.Linq;
     using System.Text;
     
-    public class HttpHeaders : IEnumerable<HttpHeader>
+    public class HttpHeaders : IHttpHeaders
     {
         private TriStateValidation is_valid;
-        private List<HttpHeader> Headers;
+        private List<IHttpHeader> Headers;
         
         public bool IsValid    => CheckIsValid();
         public int Count       => Headers.Count;
@@ -18,12 +18,12 @@ namespace Caesura.LibNetwork
         
         public HttpHeaders()
         {
-            Headers = new List<HttpHeader>();
+            Headers = new List<IHttpHeader>();
         }
         
-        public HttpHeaders(IEnumerable<HttpHeader> headers)
+        public HttpHeaders(IEnumerable<IHttpHeader> headers)
         {
-            Headers = new List<HttpHeader>(headers);
+            Headers = new List<IHttpHeader>(headers);
         }
         
         public string ToHttp()
@@ -36,39 +36,39 @@ namespace Caesura.LibNetwork
             return sb.ToString();
         }
         
-        public void Add(HttpHeader header)
+        public void Add(IHttpHeader header)
         {
             Headers.Add(header);
             is_valid = TriStateValidation.NotSet;
         }
         
-        public IEnumerable<HttpHeader> GetAllValid()
+        public IEnumerable<IHttpHeader> GetAllValid()
         {
             return Headers.Where(x => x.IsValid);
         }
         
-        public IEnumerable<HttpHeader> GetAllInvalid()
+        public IEnumerable<IHttpHeader> GetAllInvalid()
         {
             return Headers.Where(x => !x.IsValid);
         }
         
-        public HttpHeader GetByName(string name)
+        public IHttpHeader GetByName(string name)
         {
-            return Headers.Find(x => x.CompareName(name));
+            return Headers.Find(x => x.CompareName(name))!;
         }
         
-        public IEnumerable<HttpHeader> GetAll()
+        public IEnumerable<IHttpHeader> GetAll()
         {
-            return new List<HttpHeader>(Headers);
+            return new List<IHttpHeader>(Headers);
         }
         
-        public HttpHeader this[int index]  
+        public IHttpHeader this[int index]  
         {  
             get { return Headers[index]; }  
             set { Headers.Insert(index, value); }  
         } 
 
-        public IEnumerator<HttpHeader> GetEnumerator()
+        public IEnumerator<IHttpHeader> GetEnumerator()
         {
             return Headers.GetEnumerator();
         }

@@ -4,7 +4,7 @@ namespace Caesura.LibNetwork
     using System;
     using System.Linq;
     
-    public readonly struct HttpHeader
+    public readonly struct HttpHeader : IHttpHeader
     {
         private readonly string whole_header;
         private readonly string header_name;

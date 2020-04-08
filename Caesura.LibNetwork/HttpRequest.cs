@@ -7,12 +7,12 @@ namespace Caesura.LibNetwork
     using System.Text;
     using System.IO;
     
-    public class HttpRequest
+    public class HttpRequest : IHttpRequest
     {
         public HttpRequestKind Kind { get; private set; }
         public Uri Resource { get; private set; }
         public HttpVersion Version { get; private set; }
-        public HttpMessage Message { get; set; }
+        public IHttpMessage Message { get; set; }
         
         private bool is_valid;
         public bool IsValid => is_valid && Message.IsValid;
@@ -23,7 +23,7 @@ namespace Caesura.LibNetwork
             Message  = new HttpMessage();
         }
         
-        public HttpRequest(string line, HttpMessage message)
+        public HttpRequest(string line, IHttpMessage message)
         {
             is_valid = TryValidate(line, out var kind, out var resource, out var version);
             Kind     = kind;
@@ -32,7 +32,7 @@ namespace Caesura.LibNetwork
             Message  = message;
         }
         
-        public HttpRequest(HttpRequestKind kind, Uri resource, HttpVersion version, HttpMessage message)
+        public HttpRequest(HttpRequestKind kind, Uri resource, HttpVersion version, IHttpMessage message)
         {
             Kind     = kind;
             Resource = resource;
@@ -40,7 +40,7 @@ namespace Caesura.LibNetwork
             Message  = message;
         }
         
-        public HttpRequest(HttpRequestKind kind, string resource, HttpVersion version, HttpMessage message)
+        public HttpRequest(HttpRequestKind kind, string resource, HttpVersion version, IHttpMessage message)
         {
             Kind     = kind;
             Resource = new Uri(resource, UriKind.RelativeOrAbsolute);

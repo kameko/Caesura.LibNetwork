@@ -20,12 +20,12 @@ namespace Caesura.LibNetwork
         
         public TcpSession(TcpClient client, int ticks)
         {
-            _client       = client;
             starter_ticks = ticks;
+            _client       = client;
+            _writer       = new StreamWriter(_client.GetStream());
             TicksLeft     = ticks;
             State         = TcpSessionState.Ready;
             Id            = Guid.NewGuid();
-            _writer       = new StreamWriter(_client.GetStream());
             Output        = new StreamReader(_client.GetStream());
         }
         

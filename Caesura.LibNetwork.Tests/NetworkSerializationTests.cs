@@ -44,7 +44,7 @@ namespace Caesura.LibNetwork.Tests
                         new HttpHeader("User-Agent", "Solace NT"),
                     },
                     new HttpBody(
-                        "{\r\n\t\"message\": \"hello, world!\"\r\n}"
+                        "{\r\n    \"message\": \"hello, world!\"\r\n}"
                     )
                 )
             );
