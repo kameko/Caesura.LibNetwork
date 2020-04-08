@@ -1,5 +1,5 @@
 
-namespace Caesura.LibNetwork
+namespace Caesura.LibNetwork.Http
 {
     using System;
     using System.Collections.Generic;
@@ -264,7 +264,7 @@ namespace Caesura.LibNetwork
             ValidateRuntime();
             
             var token            = Canceller!.Token;
-            var request          = Config.Factories.HttpRequestFactory(Config, session.Output, token);
+            var request          = Config.Http.Factories.HttpRequestFactory(Config, session.Output, token);
             var response_session = new HttpResponseSession(session, token);
             
             if (request.IsValid)

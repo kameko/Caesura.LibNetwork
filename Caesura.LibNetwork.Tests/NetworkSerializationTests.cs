@@ -10,6 +10,7 @@ namespace Caesura.LibNetwork.Tests
     using System.IO;
     using Xunit;
     using Xunit.Abstractions;
+    using Http;
     
     public class NetworkSerializationTests
     {

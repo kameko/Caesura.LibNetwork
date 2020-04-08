@@ -1,5 +1,5 @@
 
-namespace Caesura.LibNetwork
+namespace Caesura.LibNetwork.Http
 {
     public interface IHttpBody
     {
