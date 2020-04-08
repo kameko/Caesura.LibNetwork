@@ -54,42 +54,6 @@ namespace Caesura.LibNetwork.Http
             OnSocketException    = delegate { return Task.CompletedTask; };
         }
         
-        // TODO: mockable, use a factory
-        public async Task EstablishConnection(IHttpRequest request)
-        {
-            ValidateRuntime();
-            
-            TcpSession? session = null;
-            try
-            {
-                var client = new TcpClient();
-                session = new TcpSession(client, Config.ConnectionTimeoutTicks);
-                Sessions.GetOrAdd(session.Id, session);
-                
-                await client.ConnectAsync(request.Resource.Host, request.Resource.Port);
-                
-                var bytes = request.ToBytes();
-                var sent  = await client.Client.SendAsync(bytes, SocketFlags.Broadcast, Canceller!.Token);
-                if (sent < bytes.Length)
-                {
-                    throw new UnreliableConnectionException(
-                          $"Attempted to send {bytes.Length} bytes to {request.Resource.ToString()} "
-                        + $"but only sent {sent}."
-                    );
-                }
-            }
-            catch (Exception)
-            {
-                if (!(session is null))
-                {
-                    Sessions.Remove(session.Id, out _);
-                    session.Close();
-                }
-                
-                throw;
-            }
-        }
-        
         public async Task StartAsync()
         {
             ValidateStart();
@@ -133,6 +97,33 @@ namespace Caesura.LibNetwork.Http
             foreach (var session_kvp in Sessions)
             {
                 session_kvp.Value.Close();
+            }
+        }
+        
+        public Task SendRequest(IHttpRequest request) => 
+            SendRequest(request.Resource.Host, request.Resource.Port, request);
+        
+        public async Task SendRequest(string host, int port, IHttpRequest request)
+        {
+            ValidateRuntime();
+            
+            ITcpSession? session = null;
+            try
+            {
+                session = await SessionFactory.Connect(host, port);
+                Sessions.GetOrAdd(session.Id, session);
+                var http = request.ToHttp();
+                await session.Write(http, Canceller!.Token);
+            }
+            catch (Exception)
+            {
+                if (!(session is null))
+                {
+                    Sessions.Remove(session.Id, out _);
+                    session.Close();
+                }
+                
+                throw;
             }
         }
         

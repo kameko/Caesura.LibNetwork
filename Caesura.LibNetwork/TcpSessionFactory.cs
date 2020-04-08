@@ -2,6 +2,7 @@
 namespace Caesura.LibNetwork
 {
     using System;
+    using System.Threading.Tasks;
     using System.Net.Sockets;
     
     public class TcpSessionFactory : ITcpSessionFactory
@@ -20,6 +21,22 @@ namespace Caesura.LibNetwork
             var client = listener.AcceptTcpClient();;
             var session = new TcpSession(client, Config.ConnectionTimeoutTicks);
             return session;
+        }
+        
+        public async Task<ITcpSession> Connect(string host, int port)
+        {
+            var client = new TcpClient();
+            try
+            {
+                var session = new TcpSession(client, Config.ConnectionTimeoutTicks);
+                await client.ConnectAsync(host, port);
+                return session;
+            }
+            catch
+            {
+                client.Close();
+                throw;
+            }
         }
         
         public void Start()
