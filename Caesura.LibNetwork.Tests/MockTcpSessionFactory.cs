@@ -3,63 +3,65 @@ namespace Caesura.LibNetwork.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading.Tasks;
     using System.IO;
-    using Http;
     
     public class MockTcpSessionFactory : ITcpSessionFactory
     {
         private LibNetworkConfig Config;
         private bool running;
+        private Func<int> portgen;
         private Dictionary<int, MemoryStream> streams;
         
-        public MockTcpSessionFactory(LibNetworkConfig config)
+        public MockTcpSessionFactory(LibNetworkConfig config, Func<int> port_generator)
         {
             Config  = config;
             running = false;
+            portgen = port_generator;
             streams = new Dictionary<int, MemoryStream>();
         }
         
         public ITcpSession AcceptTcpConnection()
         {
             var stream  = new MemoryStream();
+            var port    = portgen();
             var session = new MockTcpSession(stream, Config.ConnectionTimeoutTicks);
+            streams.Add(port, stream);
             return session;
         }
         
-        public Task<ITcpSession> Connect(string host, int port)
+        public Task<ITcpSession> Connect(string host, int port) =>
+            Task.Run<ITcpSession>(() => ConnectSync(host, port));
+        
+        private ITcpSession ConnectSync(string host, int port)
         {
-            return Task.Run<ITcpSession>(() =>
+            var remove_mes = new List<int>();
+            MemoryStream? stream = null;
+            foreach (var stream_kvp in streams)
             {
-                var remove_mes = new List<int>();
-                MemoryStream? stream = null;
-                foreach (var stream_kvp in streams)
+                if (!stream_kvp.Value.CanRead)
                 {
-                    if (!stream_kvp.Value.CanRead)
-                    {
-                        remove_mes.Add(stream_kvp.Key);
-                        continue;
-                    }
-                    if (stream_kvp.Key == port)
-                    {
-                        stream = stream_kvp.Value;
-                    }
+                    remove_mes.Add(stream_kvp.Key);
+                    continue;
                 }
-                foreach (var remove in remove_mes)
+                if (stream_kvp.Key == port)
                 {
-                    streams.Remove(remove);
+                    stream = stream_kvp.Value;
                 }
-                
-                if (stream is null)
-                {
-                    stream = new MemoryStream();
-                    streams.Add(port, stream);
-                }
-                
-                var session = new MockTcpSession(stream, Config.ConnectionTimeoutTicks);
-                return session;
-            });
+            }
+            foreach (var remove in remove_mes)
+            {
+                streams.Remove(remove);
+            }
+            
+            if (stream is null)
+            {
+                stream = new MemoryStream();
+                streams.Add(port, stream);
+            }
+            
+            var session = new MockTcpSession(stream, Config.ConnectionTimeoutTicks);
+            return session;
         }
         
         public void Start()
