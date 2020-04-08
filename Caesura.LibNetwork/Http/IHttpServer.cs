@@ -15,8 +15,7 @@ namespace Caesura.LibNetwork.Http
         event Func<IHttpRequest, HttpResponseSession, Task> OnTRACE;
         event Func<IHttpRequest, HttpResponseSession, Task> OnOPTIONS;
         event Func<IHttpRequest, HttpResponseSession, Task> OnCONNECT;
-        event Func<IHttpRequest, HttpResponseSession, Task> OnAnyRequest;
-        event Func<IHttpRequest, HttpResponseSession, Task> OnUnknownRequest;
+        event Func<IHttpRequest, HttpResponseSession, Task> OnAnyValidRequest;
         event Func<IHttpRequest, HttpResponseSession, Task> OnInvalidRequest;
         event Func<Exception, Task> OnUnhandledException;
         event Func<int, Task> OnSocketException;

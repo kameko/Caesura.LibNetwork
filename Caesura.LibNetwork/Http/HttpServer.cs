@@ -24,8 +24,7 @@ namespace Caesura.LibNetwork.Http
         public event Func<IHttpRequest, HttpResponseSession, Task> OnTRACE;
         public event Func<IHttpRequest, HttpResponseSession, Task> OnOPTIONS;
         public event Func<IHttpRequest, HttpResponseSession, Task> OnCONNECT;
-        public event Func<IHttpRequest, HttpResponseSession, Task> OnAnyRequest;
-        public event Func<IHttpRequest, HttpResponseSession, Task> OnUnknownRequest;
+        public event Func<IHttpRequest, HttpResponseSession, Task> OnAnyValidRequest;
         public event Func<IHttpRequest, HttpResponseSession, Task> OnInvalidRequest;
         public event Func<Exception, Task> OnUnhandledException;
         public event Func<int, Task> OnSocketException;
@@ -46,9 +45,8 @@ namespace Caesura.LibNetwork.Http
             OnOPTIONS = delegate { return Task.CompletedTask; };
             OnCONNECT = delegate { return Task.CompletedTask; };
             
-            OnAnyRequest     = delegate { return Task.CompletedTask; };
-            OnUnknownRequest = delegate { return Task.CompletedTask; };
-            OnInvalidRequest = delegate { return Task.CompletedTask; };
+            OnAnyValidRequest = delegate { return Task.CompletedTask; };
+            OnInvalidRequest  = delegate { return Task.CompletedTask; };
             
             OnUnhandledException = delegate { return Task.CompletedTask; };
             OnSocketException    = delegate { return Task.CompletedTask; };
@@ -271,9 +269,9 @@ namespace Caesura.LibNetwork.Http
                     HttpRequestKind.TRACE   => OnTRACE(request, response_session),
                     HttpRequestKind.OPTIONS => OnOPTIONS(request, response_session),
                     HttpRequestKind.CONNECT => OnCONNECT(request, response_session),
-                    _                       => OnUnknownRequest(request, response_session)
+                    _                       => throw new InvalidOperationException($"Unrecognized request: {request.Kind}."),
                 });
-                await OnAnyRequest(request, response_session);
+                await OnAnyValidRequest(request, response_session);
             }
             else
             {
