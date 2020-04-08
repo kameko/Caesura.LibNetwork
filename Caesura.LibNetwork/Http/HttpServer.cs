@@ -269,7 +269,9 @@ namespace Caesura.LibNetwork.Http
                     HttpRequestKind.TRACE   => OnTRACE(request, response_session),
                     HttpRequestKind.OPTIONS => OnOPTIONS(request, response_session),
                     HttpRequestKind.CONNECT => OnCONNECT(request, response_session),
-                    _                       => throw new InvalidOperationException($"Unrecognized request: {request.Kind}."),
+                    _ => throw new InvalidOperationException(
+                            $"Should not get here! Unrecognized request: {request.Kind}."
+                        ),
                 });
                 await OnAnyValidRequest(request, response_session);
             }
