@@ -36,6 +36,13 @@ namespace Caesura.LibNetwork
             return sb.ToString();
         }
         
+        public byte[] ToBytes()
+        {
+            var http  = ToHttp();
+            var bytes = Encoding.UTF8.GetBytes(http);
+            return bytes;
+        }
+        
         public void Add(IHttpHeader header)
         {
             Headers.Add(header);

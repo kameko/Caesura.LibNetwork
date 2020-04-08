@@ -11,5 +11,6 @@ namespace Caesura.LibNetwork
         bool HasBody { get; }
         
         string ToHttp();
+        byte[] ToBytes();
     }
 }

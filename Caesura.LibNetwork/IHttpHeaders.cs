@@ -10,6 +10,7 @@ namespace Caesura.LibNetwork
         bool HasHeaders { get; }
         
         string ToHttp();
+        byte[] ToBytes();
         void Add(IHttpHeader header);
         IEnumerable<IHttpHeader> GetAllValid();
         IEnumerable<IHttpHeader> GetAllInvalid();

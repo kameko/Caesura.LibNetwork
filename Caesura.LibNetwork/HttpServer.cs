@@ -6,19 +6,14 @@ namespace Caesura.LibNetwork
     using System.Collections.Concurrent;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.IO;
-    using System.Net;
     using System.Net.Sockets;
-    
-    // TODO: abstract TcpListener/TcpClient into a mockable factory
-    // that just returns the I/O streams
     
     public class HttpServer : IHttpServer
     {
         private LibNetworkConfig Config;
         private CancellationTokenSource? Canceller;
-        private TcpListener Listener;
-        private ConcurrentDictionary<Guid, TcpSession> Sessions;
+        private ITcpSessionFactory SessionFactory;
+        private ConcurrentDictionary<Guid, ITcpSession> Sessions;
         
         public event Func<IHttpRequest, HttpResponseSession, Task> OnGET;
         public event Func<IHttpRequest, HttpResponseSession, Task> OnDELETE;
@@ -37,9 +32,9 @@ namespace Caesura.LibNetwork
         
         public HttpServer(LibNetworkConfig config)
         {
-            Config    = config;
-            Listener  = new TcpListener(config.IP, config.Port);
-            Sessions  = new ConcurrentDictionary<Guid, TcpSession>();
+            Config         = config;
+            SessionFactory = config.Factories.TcpSessionFactoryFactory(config);
+            Sessions       = new ConcurrentDictionary<Guid, ITcpSession>();
             
             OnGET     = delegate { return Task.CompletedTask; };
             OnDELETE  = delegate { return Task.CompletedTask; };
@@ -59,7 +54,8 @@ namespace Caesura.LibNetwork
             OnSocketException    = delegate { };
         }
         
-        public async Task EstablishConnection(HttpRequest request)
+        // TODO: mockable, use a factory
+        public async Task EstablishConnection(IHttpRequest request)
         {
             ValidateRuntime();
             
@@ -98,7 +94,7 @@ namespace Caesura.LibNetwork
         {
             ValidateStart();
             
-            Listener.Start();
+            SessionFactory.Start();
             await GetAllSubsystemTasks();
         }
         
@@ -106,7 +102,7 @@ namespace Caesura.LibNetwork
         {
             ValidateStart();
             
-            Listener.Start();
+            SessionFactory.Start();
             var task = GetAllSubsystemTasks();
             
             while (!Canceller!.IsCancellationRequested)
@@ -131,7 +127,7 @@ namespace Caesura.LibNetwork
                 throw new InvalidOperationException("HTTP server has already been cancelled.");
             }
             
-            Listener.Stop();
+            SessionFactory.Stop();
             Canceller.Cancel();
             
             foreach (var session_kvp in Sessions)
@@ -184,8 +180,9 @@ namespace Caesura.LibNetwork
                 
                 try
                 {
-                    var client = Listener.AcceptTcpClient();
-                    var session = new TcpSession(client, Config.ConnectionTimeoutTicks);
+                    //var client = Listener.AcceptTcpClient();
+                    //var session = new TcpSession(client, Config.ConnectionTimeoutTicks);
+                    var session = SessionFactory.AcceptTcpConnection();
                     
                     Sessions.GetOrAdd(session.Id, session);
                 }
@@ -242,7 +239,7 @@ namespace Caesura.LibNetwork
             }
         }
         
-        private async Task HandleSessionSafely(TcpSession session)
+        private async Task HandleSessionSafely(ITcpSession session)
         {
             try
             {
@@ -262,7 +259,7 @@ namespace Caesura.LibNetwork
             }
         }
         
-        private async Task HandleSession(TcpSession session)
+        private async Task HandleSession(ITcpSession session)
         {
             ValidateRuntime();
             

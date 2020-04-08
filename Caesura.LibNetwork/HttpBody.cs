@@ -2,6 +2,7 @@
 namespace Caesura.LibNetwork
 {
     using System;
+    using System.Text;
     using System.Text.Json;
     
     public class HttpBody : IHttpBody
@@ -24,6 +25,13 @@ namespace Caesura.LibNetwork
         public string ToHttp()
         {
             return raw_body;
+        }
+        
+        public byte[] ToBytes()
+        {
+            var http  = ToHttp();
+            var bytes = Encoding.UTF8.GetBytes(http);
+            return bytes;
         }
         
         public bool TryDeserialize<T>(out T item)

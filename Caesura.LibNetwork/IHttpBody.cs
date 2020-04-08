@@ -7,6 +7,7 @@ namespace Caesura.LibNetwork
         bool IsValid { get; }
         
         string ToHttp();
+        byte[] ToBytes();
         bool TryDeserialize<T>(out T item);
         T DeserializeOrThrow<T>();
     }

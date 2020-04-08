@@ -36,10 +36,12 @@ namespace Caesura.LibNetwork
     public class LibNetworkFactories
     {
         public Func<LibNetworkConfig, StreamReader, CancellationToken, IHttpRequest> HttpRequestFactory { get; set; }
+        public Func<LibNetworkConfig, ITcpSessionFactory> TcpSessionFactoryFactory { get; set; }
         
         public LibNetworkFactories()
         {
             HttpRequestFactory = (c, s, t) => HttpRequest.FromStream(s, c.HeaderAmountLimit, t);
+            TcpSessionFactoryFactory = (c) => new TcpSessionFactory(c);
         }
         
         public static LibNetworkFactories GetDefault()

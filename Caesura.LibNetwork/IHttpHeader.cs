@@ -9,6 +9,7 @@ namespace Caesura.LibNetwork
         bool IsValid { get; }
         
         string ToHttp();
+        byte[] ToBytes();
         string ToHttpNoNewline();
         bool CompareName(string name);
         

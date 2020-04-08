@@ -12,5 +12,6 @@ namespace Caesura.LibNetwork
         bool IsValid { get; }
         
         string ToHttp();
+        byte[] ToBytes();
     }
 }
