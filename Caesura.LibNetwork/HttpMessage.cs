@@ -2,7 +2,9 @@
 namespace Caesura.LibNetwork
 {
     using System;
+    using System.Threading;
     using System.Text;
+    using System.IO;
     
     public class HttpMessage
     {
@@ -28,6 +30,34 @@ namespace Caesura.LibNetwork
         
         public HttpMessage(HttpHeaders headers)
             : this(headers, new HttpBody()) { }
+        
+        public static HttpMessage FromStream(StreamReader reader, int header_limit, CancellationToken token)
+        {
+            HttpHeaders headers = new HttpHeaders();
+            
+            var limiter = header_limit;
+            while (limiter < header_limit && !reader.EndOfStream && !token.IsCancellationRequested)
+            {
+                var header_line = reader.ReadLine();
+                if (!string.IsNullOrEmpty(header_line))
+                {
+                    var header = new HttpHeader(header_line);
+                    headers.Add(header);
+                }
+                else
+                {
+                    // reached the end of the headers, next is the body.
+                    break;
+                }
+                limiter--;
+            }
+            
+            var body_lines = reader.EndOfStream ? string.Empty : reader.ReadToEnd();
+            var body       = new HttpBody(body_lines);
+            var message    = new HttpMessage(headers, body);
+            
+            return message;
+        }
         
         public string ToHttp()
         {

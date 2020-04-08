@@ -4,28 +4,31 @@ namespace Caesura.LibNetwork
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Net.Sockets;
     
     public class HttpResponseSession
     {
+        private ITcpSession _session;
         private CancellationToken _token;
-        private TcpSession _session;
         
-        internal HttpResponseSession(CancellationToken token, TcpSession session)
+        internal HttpResponseSession(ITcpSession session, CancellationToken token)
         {
-            _token   = token;
             _session = session;
+            _token   = token;
         }
         
         public async Task Respond(HttpResponse response)
         {
+            if (!response.IsValid)
+            {
+                throw new ArgumentException("HttpResponse is not valid to send.");
+            }
             if (_session.State == TcpSessionState.Closed)
             {
                 throw new TcpSessionNotActiveException("Session is no longer active.");
             }
             
-            var http = response.ToHttp().ToCharArray();
-            await _session.Writer.WriteLineAsync(http, _token);
+            var http = response.ToHttp();
+            await _session.Write(http, _token);
         }
         
         public void Close()

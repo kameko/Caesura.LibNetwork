@@ -10,6 +10,9 @@ namespace Caesura.LibNetwork
     using System.Net;
     using System.Net.Sockets;
     
+    // TODO: abstract TcpListener/TcpClient into a mockable factory
+    // that just returns the I/O streams
+    
     public class HttpServer : IHttpServer
     {
         private LibNetworkConfig Config;
@@ -264,8 +267,8 @@ namespace Caesura.LibNetwork
             ValidateRuntime();
             
             var token            = Canceller!.Token;
-            var request          = NetworkSerialization.DeserializeHttpRequest(session.Reader, Config, token);
-            var response_session = new HttpResponseSession(token, session);
+            var request          = HttpRequest.FromStream(session.Output, Config.HeaderAmountLimit, token);
+            var response_session = new HttpResponseSession(session, token);
             
             if (request.IsValid)
             {

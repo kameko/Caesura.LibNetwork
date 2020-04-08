@@ -2,6 +2,8 @@
 namespace Caesura.LibNetwork
 {
     using System;
+    using System.Threading;
+    using System.Threading.Tasks;
     using System.IO;
     using System.Net.Sockets;
     
@@ -9,11 +11,11 @@ namespace Caesura.LibNetwork
     {
         private int starter_ticks;
         private TcpClient _client;
+        private StreamWriter _writer;
         public TcpSessionState State { get; private set; }
         public int TicksLeft { get; private set; }
         public Guid Id { get; private set; }
-        public StreamReader Reader { get; private set; }
-        public StreamWriter Writer { get; private set; }
+        public StreamReader Output { get; private set; }
         public bool DataAvailable => _client.GetStream().DataAvailable;
         
         public TcpSession(TcpClient client, int ticks)
@@ -23,8 +25,18 @@ namespace Caesura.LibNetwork
             TicksLeft     = ticks;
             State         = TcpSessionState.Ready;
             Id            = Guid.NewGuid();
-            Reader        = new StreamReader(_client.GetStream());
-            Writer        = new StreamWriter(_client.GetStream());
+            _writer       = new StreamWriter(_client.GetStream());
+            Output        = new StreamReader(_client.GetStream());
+        }
+        
+        public async Task Write(string text, CancellationToken token)
+        {
+            if (State == TcpSessionState.Closed)
+            {
+                throw new TcpSessionNotActiveException("Session is no longer active.");
+            }
+            await _writer.WriteAsync(text);
+            await _writer.FlushAsync();
         }
         
         public void TickDown()
@@ -51,6 +63,7 @@ namespace Caesura.LibNetwork
         {
             State = TcpSessionState.Closed;
             _client.Close();
+            Output.Close();
         }
         
         public void Dispose()

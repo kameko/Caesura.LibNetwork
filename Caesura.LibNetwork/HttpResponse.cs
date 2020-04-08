@@ -2,7 +2,9 @@
 namespace Caesura.LibNetwork
 {
     using System;
+    using System.Threading;
     using System.Text;
+    using System.IO;
     
     public class HttpResponse
     {
@@ -37,6 +39,20 @@ namespace Caesura.LibNetwork
             Version    = version;
             StatusCode = code;
             Message    = message;
+        }
+        
+        public static HttpResponse FromStream(StreamReader reader, int header_limit, CancellationToken token)
+        {
+            if (reader.EndOfStream)
+            {
+                throw new EndOfStreamException();
+            }
+            
+            var response_line = reader.ReadLine();
+            var message       = HttpMessage.FromStream(reader, header_limit, token);
+            var response      = new HttpResponse(response_line!, message);
+            
+            return response;
         }
         
         public string ToHttp()

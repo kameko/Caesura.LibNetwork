@@ -2,6 +2,8 @@
 namespace Caesura.LibNetwork
 {
     using System;
+    using System.Threading;
+    using System.Threading.Tasks;
     using System.IO;
     
     public enum TcpSessionState
@@ -16,10 +18,10 @@ namespace Caesura.LibNetwork
         Guid Id { get; }
         int TicksLeft { get; }
         TcpSessionState State { get; }
-        StreamReader Reader { get; }
-        StreamWriter Writer { get; }
+        StreamReader Output { get; }
         bool DataAvailable { get; }
         
+        Task Write(string text, CancellationToken token);
         void TickDown();
         void ResetTicks();
         void Close();

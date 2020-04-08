@@ -2,7 +2,10 @@
 namespace Caesura.LibNetwork
 {
     using System;
+    using System.Threading;
+    using System.Threading.Tasks;
     using System.Text;
+    using System.IO;
     
     public class HttpRequest
     {
@@ -43,6 +46,20 @@ namespace Caesura.LibNetwork
             Resource = new Uri(resource, UriKind.RelativeOrAbsolute);
             Version  = version;
             Message  = message;
+        }
+        
+        public static HttpRequest FromStream(StreamReader reader, int header_limit, CancellationToken token)
+        {
+            if (reader.EndOfStream)
+            {
+                throw new EndOfStreamException();
+            }
+            
+            var request_line = reader.ReadLine();
+            var message      = HttpMessage.FromStream(reader, header_limit, token);
+            var request      = new HttpRequest(request_line!, message);
+            
+            return request;
         }
         
         public string ToHttp()

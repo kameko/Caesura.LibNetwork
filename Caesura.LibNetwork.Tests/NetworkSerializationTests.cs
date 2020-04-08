@@ -55,10 +55,9 @@ namespace Caesura.LibNetwork.Tests
             input.Write(http1);
             memstream.Position = 0; // Thank you MemoryStream, I hate you :) 
             
-            var config = LibNetworkConfig.GetDefault();
             var token  = new CancellationTokenSource(5_000);
             
-            var request2 = NetworkSerialization.DeserializeHttpRequest(output, config, token.Token);
+            var request2 = HttpRequest.FromStream(output, 100, token.Token);
             
             Assert.True(request2.IsValid);
         }
