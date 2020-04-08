@@ -10,21 +10,23 @@ namespace Caesura.LibNetwork.Tests
     {
         private LibNetworkConfig Config;
         private bool running;
-        private Func<int> portgen;
+        private IEnumerator<int> portgen;
         private Dictionary<int, MemoryStream> streams;
         
-        public MockTcpSessionFactory(LibNetworkConfig config, Func<int> port_generator)
+        public MockTcpSessionFactory(LibNetworkConfig config, Func<IEnumerable<int>> port_generator)
         {
             Config  = config;
             running = false;
-            portgen = port_generator;
+            portgen = port_generator().GetEnumerator();
             streams = new Dictionary<int, MemoryStream>();
         }
         
         public ITcpSession AcceptTcpConnection()
         {
+            portgen.MoveNext();
+            
             var stream  = new MemoryStream();
-            var port    = portgen();
+            var port    = portgen.Current;
             var session = new MockTcpSession(stream, Config.ConnectionTimeoutTicks);
             streams.Add(port, stream);
             return session;
