@@ -18,8 +18,8 @@ namespace Caesura.LibNetwork
         event Func<IHttpRequest, HttpResponseSession, Task> OnAnyRequest;
         event Func<IHttpRequest, HttpResponseSession, Task> OnUnknownRequest;
         event Func<IHttpRequest, HttpResponseSession, Task> OnInvalidRequest;
-        event Action<Exception> OnUnhandledException;
-        event Action<int> OnSocketException;
+        event Func<Exception, Task> OnUnhandledException;
+        event Func<int, Task> OnSocketException;
         
         Task StartAsync();
         void Start();

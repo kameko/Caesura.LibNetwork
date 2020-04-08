@@ -27,8 +27,8 @@ namespace Caesura.LibNetwork
         public event Func<IHttpRequest, HttpResponseSession, Task> OnAnyRequest;
         public event Func<IHttpRequest, HttpResponseSession, Task> OnUnknownRequest;
         public event Func<IHttpRequest, HttpResponseSession, Task> OnInvalidRequest;
-        public event Action<Exception> OnUnhandledException;
-        public event Action<int> OnSocketException;
+        public event Func<Exception, Task> OnUnhandledException;
+        public event Func<int, Task> OnSocketException;
         
         public HttpServer(LibNetworkConfig config)
         {
@@ -50,8 +50,8 @@ namespace Caesura.LibNetwork
             OnUnknownRequest = delegate { return Task.CompletedTask; };
             OnInvalidRequest = delegate { return Task.CompletedTask; };
             
-            OnUnhandledException = delegate { };
-            OnSocketException    = delegate { };
+            OnUnhandledException = delegate { return Task.CompletedTask; };
+            OnSocketException    = delegate { return Task.CompletedTask; };
         }
         
         // TODO: mockable, use a factory
@@ -188,11 +188,11 @@ namespace Caesura.LibNetwork
                 }
                 catch (SocketException se)
                 {
-                    OnSocketException(se.ErrorCode);
+                    await OnSocketException(se.ErrorCode);
                 }
                 catch (Exception e)
                 {
-                    OnUnhandledException(e);
+                    await OnUnhandledException(e);
                     throw;
                 }
             }
@@ -254,7 +254,7 @@ namespace Caesura.LibNetwork
             {
                 Sessions.Remove(session.Id, out _);
                 session.Close();
-                OnUnhandledException(e);
+                await OnUnhandledException(e);
                 throw;
             }
         }
