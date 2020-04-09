@@ -65,6 +65,9 @@ namespace Caesura.LibNetwork.Http
             ValidateStart();
             
             SessionFactory.Start();
+            GetAllSubsystemTasks();
+            
+            /*
             var task = GetAllSubsystemTasks();
             
             while (!Canceller!.IsCancellationRequested)
@@ -76,6 +79,7 @@ namespace Caesura.LibNetwork.Http
                     throw task.Exception!;
                 }
             }
+            */
         }
         
         public void Stop()
@@ -128,9 +132,8 @@ namespace Caesura.LibNetwork.Http
         private Task GetAllSubsystemTasks()
         {
             return Task.WhenAll(
-                ConnectionWaiter(),
-                InactiveSessionDetector(),
-                SessionHandler()
+                Task.Run(ConnectionWaiter),
+                Task.Run(SessionHandler)
             );
         }
         
@@ -145,13 +148,13 @@ namespace Caesura.LibNetwork.Http
         
         private void ValidateRuntime()
         {
-            if (Canceller!.IsCancellationRequested)
+            if (Canceller is null)
             {
-                throw new InvalidOperationException("HTTP server already cancelled.");
+                throw new InvalidOperationException("HTTP server not started");
             }
-            else
+            else if (Canceller.IsCancellationRequested)
             {
-                throw new InvalidOperationException("HTTP server already running.");
+                throw new InvalidOperationException("HTTP server has been cancelled.");
             }
         }
         
@@ -169,7 +172,7 @@ namespace Caesura.LibNetwork.Http
                 
                 try
                 {
-                    var session = SessionFactory.AcceptTcpConnection();
+                    var session = SessionFactory.AcceptTcpConnection(token);
                     Sessions.GetOrAdd(session.Id, session);
                 }
                 catch (SocketException se)
@@ -184,32 +187,20 @@ namespace Caesura.LibNetwork.Http
             }
         }
         
-        private async Task InactiveSessionDetector()
-        {
-            ValidateRuntime();
-            var token = Canceller!.Token;
-            while (!token.IsCancellationRequested)
-            {
-                foreach (var session_kvp in Sessions)
-                {
-                    if (session_kvp.Value.State == TcpSessionState.Closed)
-                    {
-                        Sessions.Remove(session_kvp.Key, out _);
-                    }
-                }
-                
-                await Task.Delay(1_000, token);
-            }
-        }
-        
         private async Task SessionHandler()
         {
             ValidateRuntime();
             var token = Canceller!.Token;
+            var remove_ids = new List<Guid>();
             while (!token.IsCancellationRequested)
             {
                 foreach (var session_kvp in Sessions)
                 {
+                    if (token.IsCancellationRequested)
+                    {
+                        break;
+                    }
+                    
                     if (session_kvp.Value.DataAvailable)
                     {
                         session_kvp.Value.ResetTicks();
@@ -217,8 +208,25 @@ namespace Caesura.LibNetwork.Http
                     }
                     else
                     {
+                        if (session_kvp.Value.State == TcpSessionState.Closed)
+                        {
+                            remove_ids.Add(session_kvp.Key);
+                        }
                         session_kvp.Value.TickDown();
                     }
+                }
+                if (remove_ids.Count > 0)
+                {
+                    foreach (var id in remove_ids)
+                    {
+                        if (token.IsCancellationRequested)
+                        {
+                            break;
+                        }
+                        
+                        Sessions.Remove(id, out _);
+                    }
+                    remove_ids.Clear();
                 }
                 
                 await Task.Delay(1);

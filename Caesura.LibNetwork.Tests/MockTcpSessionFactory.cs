@@ -3,6 +3,7 @@ namespace Caesura.LibNetwork.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using System.IO;
     
@@ -10,25 +11,35 @@ namespace Caesura.LibNetwork.Tests
     {
         private LibNetworkConfig Config;
         private bool running;
-        private IEnumerator<int> portgen;
         private Dictionary<int, MemoryStream> streams;
+        private MemoryStream? simulated_stream;
+        private int simulated_port;
+        public bool Running => running;
         
-        public MockTcpSessionFactory(LibNetworkConfig config, Func<IEnumerable<int>> port_generator)
+        public MockTcpSessionFactory(LibNetworkConfig config)
         {
             Config  = config;
             running = false;
-            portgen = port_generator().GetEnumerator();
             streams = new Dictionary<int, MemoryStream>();
         }
         
-        public ITcpSession AcceptTcpConnection()
+        public void SimulateConnection(MemoryStream stream, int port)
         {
-            portgen.MoveNext();
+            simulated_stream = stream;
+            simulated_port   = port;
+        }
+        
+        public ITcpSession AcceptTcpConnection(CancellationToken token)
+        {
+            while (simulated_stream is null)
+            {
+                Thread.Sleep(15);
+            }
+            var stream = simulated_stream;
+            simulated_stream = null;
             
-            var stream  = new MemoryStream();
-            var port    = portgen.Current;
             var session = new MockTcpSession(stream, Config.ConnectionTimeoutTicks);
-            streams.Add(port, stream);
+            streams.Add(simulated_port, stream);
             return session;
         }
         

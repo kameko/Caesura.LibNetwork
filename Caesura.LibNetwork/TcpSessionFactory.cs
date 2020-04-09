@@ -2,6 +2,7 @@
 namespace Caesura.LibNetwork
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using System.Net.Sockets;
     
@@ -16,9 +17,9 @@ namespace Caesura.LibNetwork
             listener = new TcpListener(config.IP, config.Port);
         }
         
-        public ITcpSession AcceptTcpConnection()
+        public ITcpSession AcceptTcpConnection(CancellationToken token)
         {
-            var client  = listener.AcceptTcpClient();;
+            var client  = listener.AcceptTcpClient();
             var session = new TcpSession(client, Config.ConnectionTimeoutTicks);
             return session;
         }
