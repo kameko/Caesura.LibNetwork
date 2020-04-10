@@ -30,7 +30,7 @@ namespace Caesura.LibNetwork.Tests
         public async Task basic_test_1()
         {
             var got_request  = false;
-            var got_response = false;
+            // var got_response = false;
             
             var config1 = new LibNetworkConfig()
             {
@@ -49,28 +49,6 @@ namespace Caesura.LibNetwork.Tests
             
             var server1 = new HttpServer(config1);
             var server2 = new HttpServer(config2);
-            
-            server1.OnGET += async (req, session) =>
-            {
-                got_response = true;
-                
-                var response = new HttpResponse(
-                    HttpVersion.HTTP1_1,
-                    HttpStatusCode.OK,
-                    new HttpMessage(
-                        new HttpHeaders()
-                        {
-                            new HttpHeader("Accept-Language", "en-US"),
-                            new HttpHeader("Host", "localhost:4899"),
-                            new HttpHeader("User-Agent", "Solace NT"),
-                        },
-                        new HttpBody(
-                            "{\r\n    \"message\": \"hello back to you!\"\r\n}"
-                        )
-                    )
-                );
-                await session.Respond(response);
-            };
             
             server2.OnGET += async (req, session) =>
             {
@@ -112,6 +90,9 @@ namespace Caesura.LibNetwork.Tests
                 return Task.CompletedTask;
             };
             
+            server1.OnUnhandledException += e => throw e;
+            server2.OnUnhandledException += e => throw e;
+            
             server1.Start();
             server2.Start();
             
@@ -134,7 +115,9 @@ namespace Caesura.LibNetwork.Tests
             
             var stream1 = new MemoryStream();
             mock_session_factory2.SimulateConnection(stream1, port: 1);
-            await server1.SendRequest("localhost", 2, response);
+            var session1 = await server2.SendRequest("localhost", 1);
+            
+            
             
             await Task.Delay(5_000);
             
@@ -142,7 +125,7 @@ namespace Caesura.LibNetwork.Tests
             server2.Stop();
             
             Assert.True(got_request);
-            Assert.True(got_response);
+            // Assert.True(got_response);
         }
     }
 }

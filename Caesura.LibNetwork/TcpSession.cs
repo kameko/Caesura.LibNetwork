@@ -39,19 +39,9 @@ namespace Caesura.LibNetwork
             await _writer.FlushAsync();
         }
         
-        public void TickDown()
+        public void Pulse()
         {
-            if (_starter_ticks <= -1)
-            {
-                return;
-            }
-            
-            TicksLeft = TicksLeft <= 0 ? 0 : TicksLeft - 1;
-            
-            if (TicksLeft <= 0)
-            {
-                Close();
-            }
+            CalculateTicks();
         }
         
         public void ResetTicks()
@@ -64,6 +54,21 @@ namespace Caesura.LibNetwork
             State = TcpSessionState.Closed;
             _client.Close();
             Output.Close();
+        }
+        
+        private void CalculateTicks()
+        {
+            if (_starter_ticks <= -1)
+            {
+                return;
+            }
+            
+            TicksLeft = TicksLeft <= 0 ? 0 : TicksLeft - 1;
+            
+            if (TicksLeft <= 0)
+            {
+                Close();
+            }
         }
         
         public void Dispose()

@@ -23,7 +23,7 @@ namespace Caesura.LibNetwork.Http
         Task StartAsync();
         void Start();
         void Stop();
-        Task SendRequest(IHttpRequest request);
-        Task SendRequest(string host, int port, IHttpRequest request);
+        Task<ITcpSession> SendRequest(string host, int port);
+        Task<ITcpSession> SendRequest(string host, int port, IHttpRequest? request);
     }
 }

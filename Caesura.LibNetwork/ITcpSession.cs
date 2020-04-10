@@ -22,7 +22,7 @@ namespace Caesura.LibNetwork
         bool DataAvailable { get; }
         
         Task Write(string text, CancellationToken token);
-        void TickDown();
+        void Pulse();
         void ResetTicks();
         void Close();
     }

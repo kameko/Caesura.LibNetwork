@@ -5,6 +5,9 @@ namespace Caesura.LibNetwork.Http
     using System.Threading;
     using System.Threading.Tasks;
     
+    // TODO: maybe turn this into an HttpSession class,
+    // move all the response events here.
+    
     public class HttpResponseSession
     {
         private ITcpSession _session;

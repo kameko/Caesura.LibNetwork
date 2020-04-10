@@ -26,6 +26,7 @@ namespace Caesura.LibNetwork.Http
         public event Func<IHttpRequest, HttpResponseSession, Task> OnCONNECT;
         public event Func<IHttpRequest, HttpResponseSession, Task> OnAnyValidRequest;
         public event Func<IHttpRequest, HttpResponseSession, Task> OnInvalidRequest;
+        public event Func<IHttpResponse, Task> OnGetResponse;
         public event Func<Exception, Task> OnUnhandledException;
         public event Func<int, Task> OnSocketException;
         
@@ -47,6 +48,7 @@ namespace Caesura.LibNetwork.Http
             
             OnAnyValidRequest = delegate { return Task.CompletedTask; };
             OnInvalidRequest  = delegate { return Task.CompletedTask; };
+            OnGetResponse     = delegate { return Task.CompletedTask; };
             
             OnUnhandledException = delegate { return Task.CompletedTask; };
             OnSocketException    = delegate { return Task.CompletedTask; };
@@ -62,24 +64,7 @@ namespace Caesura.LibNetwork.Http
         
         public void Start()
         {
-            ValidateStart();
-            
-            SessionFactory.Start();
-            GetAllSubsystemTasks();
-            
-            /*
-            var task = GetAllSubsystemTasks();
-            
-            while (!Canceller!.IsCancellationRequested)
-            {
-                Thread.Sleep(15);
-                if (task.IsFaulted)
-                {
-                    Stop();
-                    throw task.Exception!;
-                }
-            }
-            */
+            Task.Run(StartAsync);
         }
         
         public void Stop()
@@ -102,10 +87,10 @@ namespace Caesura.LibNetwork.Http
             }
         }
         
-        public Task SendRequest(IHttpRequest request) => 
-            SendRequest(request.Resource.Host, request.Resource.Port, request);
+        public Task<ITcpSession> SendRequest(string host, int port) => 
+            SendRequest(host, port, null!);
         
-        public async Task SendRequest(string host, int port, IHttpRequest request)
+        public async Task<ITcpSession> SendRequest(string host, int port, IHttpRequest? request)
         {
             ValidateRuntime();
             
@@ -114,8 +99,12 @@ namespace Caesura.LibNetwork.Http
             {
                 session = await SessionFactory.Connect(host, port);
                 Sessions.GetOrAdd(session.Id, session);
-                var http = request.ToHttp();
-                await session.Write(http, Canceller!.Token);
+                if (!(request is null))
+                {
+                    var http = request.ToHttp();
+                    await session.Write(http, Canceller!.Token);
+                }
+                return session;
             }
             catch (Exception)
             {
@@ -201,6 +190,8 @@ namespace Caesura.LibNetwork.Http
                         break;
                     }
                     
+                    session_kvp.Value.Pulse();
+                    
                     if (session_kvp.Value.DataAvailable)
                     {
                         session_kvp.Value.ResetTicks();
@@ -212,7 +203,6 @@ namespace Caesura.LibNetwork.Http
                         {
                             remove_ids.Add(session_kvp.Key);
                         }
-                        session_kvp.Value.TickDown();
                     }
                 }
                 if (remove_ids.Count > 0)
