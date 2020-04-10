@@ -5,6 +5,7 @@ namespace Caesura.LibNetwork
     using System.Threading;
     using System.Threading.Tasks;
     using System.IO;
+    using System.Text;
     using System.Net.Sockets;
     
     internal class TcpSession : ITcpSession
@@ -22,11 +23,11 @@ namespace Caesura.LibNetwork
         {
             _starter_ticks = ticks;
             _client        = client;
-            _writer        = new StreamWriter(_client.GetStream());
+            _writer        = new StreamWriter(_client.GetStream(), Encoding.UTF8);
             TicksLeft      = ticks;
             State          = TcpSessionState.Ready;
             Id             = Guid.NewGuid();
-            Output         = new StreamReader(_client.GetStream());
+            Output         = new StreamReader(_client.GetStream(), Encoding.UTF8);
         }
         
         public async Task Write(string text, CancellationToken token)

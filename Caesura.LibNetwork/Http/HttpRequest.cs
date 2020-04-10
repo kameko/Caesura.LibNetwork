@@ -10,16 +10,16 @@ namespace Caesura.LibNetwork.Http
     public class HttpRequest : IHttpRequest
     {
         public HttpRequestKind Kind { get; private set; }
-        public Uri Resource { get; private set; }
+        public Resource Resource { get; private set; }
         public HttpVersion Version { get; private set; }
         public IHttpMessage Message { get; set; }
         
         private bool is_valid;
-        public bool IsValid => is_valid && Message.IsValid;
+        public bool IsValid => is_valid && Resource.IsValid && Message.IsValid;
         
         private HttpRequest()
         {
-            Resource = new Uri("/unknown", UriKind.RelativeOrAbsolute);
+            Resource = new Resource();
             Message  = new HttpMessage();
         }
         
@@ -32,7 +32,7 @@ namespace Caesura.LibNetwork.Http
             Message  = message;
         }
         
-        public HttpRequest(HttpRequestKind kind, Uri resource, HttpVersion version, IHttpMessage message)
+        public HttpRequest(HttpRequestKind kind, Resource resource, HttpVersion version, IHttpMessage message)
         {
             Kind     = kind;
             Resource = resource;
@@ -44,7 +44,7 @@ namespace Caesura.LibNetwork.Http
         public HttpRequest(HttpRequestKind kind, string resource, HttpVersion version, IHttpMessage message)
         {
             Kind     = kind;
-            Resource = new Uri(resource, UriKind.RelativeOrAbsolute);
+            Resource = new Resource(resource);
             Version  = version;
             Message  = message;
             is_valid = true;
@@ -82,13 +82,13 @@ namespace Caesura.LibNetwork.Http
             return bytes;
         }
         
-        public static bool TryValidate(string request, out HttpRequestKind kind, out Uri resource, out HttpVersion version)
+        public static bool TryValidate(string request, out HttpRequestKind kind, out Resource resource, out HttpVersion version)
         {
             var result = Validate(request, out kind, out resource, out version);
             return result == ValidationCode.Valid;
         }
         
-        public static void ValidateOrThrow(string request, out HttpRequestKind kind, out Uri resource, out HttpVersion version)
+        public static void ValidateOrThrow(string request, out HttpRequestKind kind, out Resource resource, out HttpVersion version)
         {
             var result = Validate(request, out kind, out resource, out version);
             if (result != ValidationCode.Valid)
@@ -97,22 +97,22 @@ namespace Caesura.LibNetwork.Http
             }
         }
         
-        public static ValidationCode Validate(string request, out HttpRequestKind kind, out Uri resource, out HttpVersion version)
+        public static ValidationCode Validate(string request, out HttpRequestKind kind, out Resource resource, out HttpVersion version)
         {
             var elements = request?.Split(' ') ?? new string[0];
             
             kind = elements.Length > 0 ? HttpRequestKindUtils.ParseHttpRequestKind(elements[0]) : HttpRequestKind.Unknown;
             if (kind == HttpRequestKind.Unknown)
             {
-                resource = new Uri("/unknown", UriKind.RelativeOrAbsolute);
+                resource = new Resource();
                 version  = HttpVersion.Unknown;
                 return ValidationCode.RequestUnknown;
             }
             
             if (elements.Length > 1)
             {
-                var uri_success = Uri.TryCreate(elements[1], UriKind.RelativeOrAbsolute, out resource!);
-                if (!uri_success)
+                resource = new Resource(elements[1]);
+                if (!resource.IsValid)
                 {
                     version = HttpVersion.Unknown;
                     return ValidationCode.InvalidResource;
@@ -120,7 +120,7 @@ namespace Caesura.LibNetwork.Http
             }
             else
             {
-                resource = new Uri("/unknown", UriKind.RelativeOrAbsolute);
+                resource = new Resource();
                 version  = HttpVersion.Unknown;
                 return ValidationCode.NoResource;
             }

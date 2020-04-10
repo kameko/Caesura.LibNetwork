@@ -5,6 +5,7 @@ namespace Caesura.LibNetwork.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using System.IO;
+    using System.Text;
     
     public class MockTcpSession : ITcpSession
     {
@@ -21,11 +22,11 @@ namespace Caesura.LibNetwork.Tests
         {
             _memstream     = memstream;
             _starter_ticks = ticks;
-            _writer        = new StreamWriter(memstream);
+            _writer        = new StreamWriter(memstream, Encoding.UTF8);
             Id             = Guid.NewGuid();
             TicksLeft      = ticks;
             State          = TcpSessionState.Ready;
-            Output         = new StreamReader(memstream);
+            Output         = new StreamReader(memstream, Encoding.UTF8);
         }
         
         public async Task Write(string text, CancellationToken token)

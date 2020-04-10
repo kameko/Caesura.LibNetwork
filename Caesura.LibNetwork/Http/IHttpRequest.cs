@@ -6,7 +6,7 @@ namespace Caesura.LibNetwork.Http
     public interface IHttpRequest
     {
         HttpRequestKind Kind { get; }
-        Uri Resource { get; }
+        Resource Resource { get; }
         HttpVersion Version { get; }
         IHttpMessage Message { get; }
         bool IsValid { get; }

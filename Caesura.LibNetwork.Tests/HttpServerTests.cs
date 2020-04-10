@@ -50,6 +50,7 @@ namespace Caesura.LibNetwork.Tests
             var server1 = new HttpServer(config1);
             var server2 = new HttpServer(config2);
             
+            /*
             server2.OnGET += async (req, session) =>
             {
                 got_request = true;
@@ -89,6 +90,7 @@ namespace Caesura.LibNetwork.Tests
                 }
                 return Task.CompletedTask;
             };
+            */
             
             server1.OnUnhandledException += e => throw e;
             server2.OnUnhandledException += e => throw e;
