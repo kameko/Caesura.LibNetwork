@@ -68,7 +68,7 @@ namespace Caesura.LibNetwork.Http
         {
             return HttpRequestKindUtils.ConvertToString(Kind)
                 + " "
-                + Resource.ToString()
+                + Resource.Representation
                 + " "
                 + HttpVersionUtils.ConvertToString(Version)
                 + "\r\n"

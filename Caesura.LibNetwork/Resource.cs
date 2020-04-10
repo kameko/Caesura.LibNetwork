@@ -10,12 +10,17 @@ namespace Caesura.LibNetwork
     {
         private string _resource;
         
-        public string Representation => _resource;
+        public string Representation => IsValid ? _resource : throw new InvalidOperationException("Resource is not valid.");
         public bool IsValid { get; private set; }
+        
+        public bool IsIndex         => _resource == "/";
+        public bool IsDirectory     => _resource.Length > 1 && _resource.EndsWith('/');
+        public bool IsFile          => !_resource.EndsWith('/');
+        public bool IsWellFormedUri => Uri.IsWellFormedUriString(_resource, UriKind.Relative);
         
         public Resource()
         {
-            _resource = null!;
+            _resource = string.Empty;
             IsValid   = false;
         }
         
@@ -23,9 +28,6 @@ namespace Caesura.LibNetwork
         {
             IsValid = TryValidate(item, out _resource);
         }
-        
-        public bool IsWellFormedUri() => IsWellFormedUri(UriKind.RelativeOrAbsolute);
-        public bool IsWellFormedUri(UriKind kind) => Uri.IsWellFormedUriString(_resource, kind);
         
         public static bool TryValidate(string resource, out string result)
         {
