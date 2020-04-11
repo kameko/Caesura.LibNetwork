@@ -11,6 +11,7 @@ namespace Caesura.LibNetwork.Http
     // co-operative thread or for each to get their own task.
     // Maybe even let each HttpSession decide for themselves
     // at runtime.
+    // TODO: ability to name/rename these.
     
     public class HttpSession : IHttpSession
     {
@@ -23,11 +24,13 @@ namespace Caesura.LibNetwork.Http
         public event Func<IHttpRequest, HttpSession, Task> OnDELETE;
         public event Func<IHttpRequest, HttpSession, Task> OnPUT;
         public event Func<IHttpRequest, HttpSession, Task> OnPOST;
-        public event Func<IHttpRequest, HttpSession, Task> OnPATCH;
+        
         public event Func<IHttpRequest, HttpSession, Task> OnHEAD;
+        public event Func<IHttpRequest, HttpSession, Task> OnPATCH;
         public event Func<IHttpRequest, HttpSession, Task> OnTRACE;
         public event Func<IHttpRequest, HttpSession, Task> OnOPTIONS;
         public event Func<IHttpRequest, HttpSession, Task> OnCONNECT;
+        
         public event Func<IHttpRequest, HttpSession, Task> OnAnyValidRequest;
         public event Func<IHttpRequest, HttpSession, Task> OnInvalidRequest;
         public event Func<Exception, Task> OnUnhandledException;
@@ -43,8 +46,9 @@ namespace Caesura.LibNetwork.Http
             OnDELETE  = delegate { return Task.CompletedTask; };
             OnPUT     = delegate { return Task.CompletedTask; };
             OnPOST    = delegate { return Task.CompletedTask; };
-            OnPATCH   = delegate { return Task.CompletedTask; };
+            
             OnHEAD    = delegate { return Task.CompletedTask; };
+            OnPATCH   = delegate { return Task.CompletedTask; };
             OnTRACE   = delegate { return Task.CompletedTask; };
             OnOPTIONS = delegate { return Task.CompletedTask; };
             OnCONNECT = delegate { return Task.CompletedTask; };

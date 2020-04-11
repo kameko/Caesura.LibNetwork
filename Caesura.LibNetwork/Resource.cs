@@ -2,13 +2,12 @@
 namespace Caesura.LibNetwork
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
     
     public class Resource
     {
         private string _resource;
+        
+        public static Resource Index => new Resource("/");
         
         public string Representation => IsValid ? _resource : throw new InvalidOperationException("Resource is not valid.");
         public bool IsValid { get; private set; }

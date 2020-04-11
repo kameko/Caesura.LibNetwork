@@ -19,11 +19,11 @@ namespace Caesura.LibNetwork.Http
         
         private HttpRequest()
         {
-            Resource = new Resource();
+            Resource = Resource.Index;
             Message  = new HttpMessage();
         }
         
-        internal HttpRequest(string line, IHttpMessage message)
+        private HttpRequest(string line, IHttpMessage message)
         {
             is_valid = TryValidate(line, out var kind, out var resource, out var version);
             Kind     = kind;
