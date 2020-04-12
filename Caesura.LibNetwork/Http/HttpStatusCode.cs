@@ -4,6 +4,13 @@ namespace Caesura.LibNetwork.Http
     using System;
     using System.Text;
     
+    // https://en.wikipedia.org/wiki/List_of_HTTP_status_codes 
+    
+    // TODO: replace this Enum for some kind of static Key/Value class.
+    // This way, both the consumer can add custom status codes, and each
+    // status code can have a custom formatted message instead of having to
+    // use the static methods below.
+    
     public enum HttpStatusCode
     {
         Unkown                          = 0,
@@ -12,6 +19,8 @@ namespace Caesura.LibNetwork.Http
         //
         Continue                        = 100,
         SwitchingProtocols              = 101,
+        Processing                      = 102,
+        Checkpoint                      = 103,
  
         //
         // Successful 2xx
@@ -23,6 +32,7 @@ namespace Caesura.LibNetwork.Http
         NoContent                       = 204,
         ResetContent                    = 205,
         PartialContent                  = 206,
+        AlreadyReported                 = 208,
  
         //
         // Redirection 3xx
@@ -40,6 +50,7 @@ namespace Caesura.LibNetwork.Http
         Unused                          = 306,
         TemporaryRedirect               = 307,
         RedirectKeepVerb                = 307,
+        PermanentRedirect               = 308,
  
         //
         // Client Error 4xx
@@ -62,7 +73,17 @@ namespace Caesura.LibNetwork.Http
         UnsupportedMediaType            = 415,
         RequestedRangeNotSatisfiable    = 416,
         ExpectationFailed               = 417,
+        ImATeapot                       = 418,
+        MisdirectedRequest              = 421,
+        UnprocessableEntity             = 422,
+        Locked                          = 423,
+        FailedDependency                = 424,
+        TooEarly                        = 425,
         UpgradeRequired                 = 426,
+        PreconditionRequired            = 428,
+        TooManyRequests                 = 429,
+        RequestHeaderFieldsTooLarge     = 431,
+        UnavailableForLegalReasons      = 451,
  
         //
         // Server Error 5xx
@@ -73,6 +94,11 @@ namespace Caesura.LibNetwork.Http
         ServiceUnavailable              = 503,
         GatewayTimeout                  = 504,
         HttpVersionNotSupported         = 505,
+        VariantAlsoNegotiates           = 506,
+        InsufficientStorage             = 507,
+        LoopDetected                    = 508,
+        NotExtended                     = 510,
+        SSLHandshakeFailed              = 525,
     }
     
     public static class HttpStatusCodeUtils
@@ -113,31 +139,52 @@ namespace Caesura.LibNetwork.Http
             return ConvertToNumber(code).ToString();
         }
         
-        public static string ConvertToFormattedString(HttpStatusCode code)
+        public static string ConvertToFormattedString(HttpStatusCode code) => ConvertToFormattedString(code, true);
+        
+        public static string ConvertToFormattedString(HttpStatusCode code, bool capitalize_each_word)
         {
-            if (code == HttpStatusCode.OK)
+            return code switch
             {
-                return "OK";
-            }
-            else
+                HttpStatusCode.OK                 => "OK",
+                HttpStatusCode.ImATeapot          => "I'm a teapot", // Intentionally doesn't check "capitalize_each_word".
+                HttpStatusCode.SSLHandshakeFailed => capitalize_each_word ? "SSL Handshake Failed" : "SSL handshake failed",
+                _ => ConvertAndFormat(code, capitalize_each_word)
+            };
+        }
+        
+        private static string ConvertAndFormat(HttpStatusCode code, bool capitalize_each_word)
+        {
+            var sb  = new StringBuilder();
+            var str = code.ToString();
+            
+            // Append the first character, then get
+            // the substring, so we don't add a space
+            // before the first word.
+            sb.Append(str[0]);
+            foreach (var c in str.Substring(1))
             {
-                var sb  = new StringBuilder();
-                var str = code.ToString();
-                
-                // Append the first character then get
-                // the substring, so we don't add a space
-                // before the first word.
-                sb.Append(str[0]);
-                foreach (var c in str.Substring(1))
+                if (char.IsUpper(c))
                 {
-                    if (char.IsUpper(c))
+                    sb.Append(' ');
+                }
+                
+                if (char.IsUpper(c))
+                {
+                    if (capitalize_each_word)
                     {
-                        sb.Append(' ');
+                        sb.Append(c);
                     }
+                    else
+                    {
+                        sb.Append(char.ToLower(c));
+                    }
+                }
+                else
+                {
                     sb.Append(c);
                 }
-                return sb.ToString();
             }
+            return sb.ToString();
         }
     }
 }
