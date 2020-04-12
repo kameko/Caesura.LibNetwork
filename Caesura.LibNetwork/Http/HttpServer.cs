@@ -8,6 +8,9 @@ namespace Caesura.LibNetwork.Http
     using System.Threading.Tasks;
     using System.Net.Sockets;
     
+    // https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol 
+    // https://github.com/App-vNext/Polly/wiki/Transient-fault-handling-and-proactive-resilience-engineering 
+    
     public class HttpServer : IHttpServer
     {
         private LibNetworkConfig Config;

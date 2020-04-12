@@ -6,6 +6,10 @@ namespace Caesura.LibNetwork
     using System.Threading.Tasks;
     using System.IO;
     
+    // TODO: Consider making a higher-level INetworkSession interface
+    // and replace all ITcpSession instances with it. That way a user can
+    // instead use a different protocol if they need to.
+    
     public enum TcpSessionState
     {
         None   = 0,
