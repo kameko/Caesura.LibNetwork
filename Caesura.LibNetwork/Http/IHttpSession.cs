@@ -7,6 +7,7 @@ namespace Caesura.LibNetwork.Http
     
     public interface IHttpSession : IDisposable
     {
+        string Name { get; }
         event Func<IHttpRequest, HttpSession, Task> OnGET;
         event Func<IHttpRequest, HttpSession, Task> OnDELETE;
         event Func<IHttpRequest, HttpSession, Task> OnPUT;

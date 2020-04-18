@@ -5,13 +5,10 @@ namespace Caesura.LibNetwork.Http
     using System.Threading;
     using System.Threading.Tasks;
     
-    // TODO: maybe turn this into an HttpSession class,
-    // move all the response events here.
     // TODO: config option for handling all Sessions in a single
     // co-operative thread or for each to get their own task.
     // Maybe even let each HttpSession decide for themselves
     // at runtime.
-    // TODO: ability to name/rename these.
     
     public class HttpSession : IHttpSession
     {
@@ -19,6 +16,8 @@ namespace Caesura.LibNetwork.Http
         private ITcpSession _session;
         private CancellationTokenSource _canceller;
         private CancellationToken _token;
+        
+        public string Name { get; protected set; }
         
         public event Func<IHttpRequest, HttpSession, Task> OnGET;
         public event Func<IHttpRequest, HttpSession, Task> OnDELETE;
@@ -41,6 +40,8 @@ namespace Caesura.LibNetwork.Http
             _session   = session;
             _canceller = new CancellationTokenSource();
             _token     = token;
+            
+            Name       = nameof(HttpSession);
             
             OnGET     = delegate { return Task.CompletedTask; };
             OnDELETE  = delegate { return Task.CompletedTask; };
