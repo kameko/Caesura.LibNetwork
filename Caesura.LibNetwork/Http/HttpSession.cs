@@ -64,7 +64,7 @@ namespace Caesura.LibNetwork.Http
         {
             if (!response.IsValid)
             {
-                throw new ArgumentException("HttpResponse is not valid to send.");
+                throw new InvalidHttpResponseException(response.Validation);
             }
             if (_session.State == TcpSessionState.Closed)
             {

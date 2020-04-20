@@ -14,8 +14,9 @@ namespace Caesura.LibNetwork.Http
         public HttpVersion Version { get; private set; }
         public IHttpMessage Message { get; set; }
         
-        private bool is_valid;
-        public bool IsValid => is_valid && Resource.IsValid && Message.IsValid;
+        private HttpRequestValidationCode validation_code;
+        public HttpRequestValidationCode Validation => validation_code;
+        public bool IsValid => validation_code == HttpRequestValidationCode.Valid && Resource.IsValid && Message.IsValid;
         
         private HttpRequest()
         {
@@ -25,29 +26,29 @@ namespace Caesura.LibNetwork.Http
         
         private HttpRequest(string line, IHttpMessage message)
         {
-            is_valid = TryValidate(line, out var kind, out var resource, out var version);
-            Kind     = kind;
-            Resource = resource;
-            Version  = version;
-            Message  = message;
+            validation_code = Validate(line, out var kind, out var resource, out var version);
+            Kind            = kind;
+            Resource        = resource;
+            Version         = version;
+            Message         = message;
         }
         
         public HttpRequest(HttpRequestKind kind, Resource resource, HttpVersion version, IHttpMessage message)
         {
-            Kind     = kind;
-            Resource = resource;
-            Version  = version;
-            Message  = message;
-            is_valid = true;
+            Kind            = kind;
+            Resource        = resource;
+            Version         = version;
+            Message         = message;
+            validation_code = HttpRequestValidationCode.Valid;
         }
         
         public HttpRequest(HttpRequestKind kind, string resource, HttpVersion version, IHttpMessage message)
         {
-            Kind     = kind;
-            Resource = new Resource(resource);
-            Version  = version;
-            Message  = message;
-            is_valid = true;
+            Kind            = kind;
+            Resource        = new Resource(resource);
+            Version         = version;
+            Message         = message;
+            validation_code = HttpRequestValidationCode.Valid;
         }
         
         public static HttpRequest FromStream(StreamReader reader, int header_limit, CancellationToken token)
@@ -85,19 +86,19 @@ namespace Caesura.LibNetwork.Http
         public static bool TryValidate(string request, out HttpRequestKind kind, out Resource resource, out HttpVersion version)
         {
             var result = Validate(request, out kind, out resource, out version);
-            return result == ValidationCode.Valid;
+            return result == HttpRequestValidationCode.Valid;
         }
         
         public static void ValidateOrThrow(string request, out HttpRequestKind kind, out Resource resource, out HttpVersion version)
         {
             var result = Validate(request, out kind, out resource, out version);
-            if (result != ValidationCode.Valid)
+            if (result != HttpRequestValidationCode.Valid)
             {
                 throw new InvalidHttpRequestException(result);
             }
         }
         
-        public static ValidationCode Validate(string request, out HttpRequestKind kind, out Resource resource, out HttpVersion version)
+        public static HttpRequestValidationCode Validate(string request, out HttpRequestKind kind, out Resource resource, out HttpVersion version)
         {
             var elements = request?.Split(' ') ?? new string[0];
             
@@ -106,7 +107,7 @@ namespace Caesura.LibNetwork.Http
             {
                 resource = new Resource();
                 version  = HttpVersion.Unknown;
-                return ValidationCode.RequestUnknown;
+                return HttpRequestValidationCode.RequestUnknown;
             }
             
             if (elements.Length > 1)
@@ -115,14 +116,14 @@ namespace Caesura.LibNetwork.Http
                 if (!resource.IsValid)
                 {
                     version = HttpVersion.Unknown;
-                    return ValidationCode.InvalidResource;
+                    return HttpRequestValidationCode.InvalidResource;
                 }
             }
             else
             {
                 resource = new Resource();
                 version  = HttpVersion.Unknown;
-                return ValidationCode.NoResource;
+                return HttpRequestValidationCode.NoResource;
             }
             
             if (elements.Length > 2)
@@ -130,32 +131,21 @@ namespace Caesura.LibNetwork.Http
                 version = HttpVersionUtils.Parse(elements[2]);
                 if (version == HttpVersion.Unknown)
                 {
-                    return ValidationCode.UnknownVersion;
+                    return HttpRequestValidationCode.UnknownVersion;
                 }
             }
             else
             {
                 version = HttpVersion.Unknown;
-                return ValidationCode.NoVersion;
+                return HttpRequestValidationCode.NoVersion;
             }
             
-            return ValidationCode.Valid;
+            return HttpRequestValidationCode.Valid;
         }
         
         public override string ToString()
         {
             return ToHttp();
-        }
-        
-        public enum ValidationCode
-        {
-            Unknown         = 0,
-            Valid           = 1,
-            RequestUnknown  = 2,
-            NoResource      = 3,
-            InvalidResource = 4,
-            NoVersion       = 5,
-            UnknownVersion  = 6,
         }
     }
 }
