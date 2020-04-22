@@ -17,7 +17,7 @@ namespace Caesura.LibNetwork
         public int TicksLeft { get; private set; }
         public Guid Id { get; private set; }
         public StreamReader Output { get; private set; }
-        public bool DataAvailable => _client.GetStream().DataAvailable;
+        public bool DataAvailable => _client.GetStream().DataAvailable && State != TcpSessionState.Closed;
         
         public TcpSession(TcpClient client, int ticks)
         {

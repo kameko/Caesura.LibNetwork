@@ -5,11 +5,6 @@ namespace Caesura.LibNetwork.Http
     using System.Threading;
     using System.Threading.Tasks;
     
-    // TODO: config option for handling all Sessions in a single
-    // co-operative thread or for each to get their own task.
-    // Maybe even let each HttpSession decide for themselves
-    // at runtime.
-    
     public class HttpSession : IHttpSession
     {
         private LibNetworkConfig _config;
@@ -17,7 +12,7 @@ namespace Caesura.LibNetwork.Http
         private CancellationTokenSource _canceller;
         private CancellationToken _token;
         
-        public string Name { get; protected set; }
+        public string Name { get; set; }
         
         public event Func<IHttpRequest, HttpSession, Task> OnGET;
         public event Func<IHttpRequest, HttpSession, Task> OnDELETE;
@@ -68,11 +63,26 @@ namespace Caesura.LibNetwork.Http
             }
             if (_session.State == TcpSessionState.Closed)
             {
-                throw new TcpSessionNotActiveException("Session is no longer active.");
+                throw new TcpSessionNotActiveException();
             }
             
             var http = response.ToHttp();
             await _session.Write(http, _token);
+        }
+        
+        public async Task Start()
+        {
+            while (!_token.IsCancellationRequested && !_canceller.IsCancellationRequested)
+            {
+                if (_session.DataAvailable)
+                {
+                    await HandleSessionSafely(_session);
+                }
+                else
+                {
+                    await Task.Delay(15);
+                }
+            }
         }
         
         public void Close()
@@ -90,7 +100,7 @@ namespace Caesura.LibNetwork.Http
                     throw new TcpSessionNotActiveException("Session is no longer active.");
                 }
                 
-                await HandleSession();
+                await HandleSession(session);
             }
             catch (Exception e)
             {
@@ -100,9 +110,9 @@ namespace Caesura.LibNetwork.Http
             }
         }
         
-        private async Task HandleSession()
+        private async Task HandleSession(ITcpSession session)
         {
-            var request          = _config.Http.Factories.HttpRequestFactory(_config, _session.Output, _canceller.Token);
+            var request          = _config.Http.Factories.HttpRequestFactory(_config, session.Output, _canceller.Token);
             var response_session = this;
             
             if (request.IsValid)
