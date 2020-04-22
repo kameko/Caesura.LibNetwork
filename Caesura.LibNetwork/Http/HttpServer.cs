@@ -16,7 +16,7 @@ namespace Caesura.LibNetwork.Http
         private LibNetworkConfig Config;
         private CancellationTokenSource? Canceller;
         private ITcpSessionFactory SessionFactory;
-        private ConcurrentDictionary<Guid, ITcpSession> Sessions;
+        private ConcurrentDictionary<Guid, IHttpSession> Sessions;
         
         public event Func<Exception, Task> OnUnhandledException;
         public event Func<int, Task> OnSocketException;
@@ -25,7 +25,7 @@ namespace Caesura.LibNetwork.Http
         {
             Config         = config;
             SessionFactory = config.Factories.TcpSessionFactoryFactory(config);
-            Sessions       = new ConcurrentDictionary<Guid, ITcpSession>();
+            Sessions       = new ConcurrentDictionary<Guid, IHttpSession>();
             
             OnUnhandledException = delegate { return Task.CompletedTask; };
             OnSocketException    = delegate { return Task.CompletedTask; };
@@ -64,32 +64,33 @@ namespace Caesura.LibNetwork.Http
             }
         }
         
-        public Task<ITcpSession> SendRequest(string host, int port) => 
-            SendRequest(host, port, null!);
+        public Task<IHttpSession> SendRequest(string host, int port) => 
+            SendRequestInternal(host, port, null);
         
-        public async Task<ITcpSession> SendRequest(string host, int port, IHttpRequest? request)
+        public Task<IHttpSession> SendRequest(string host, int port, IHttpRequest request) =>
+            SendRequestInternal(host, port, request);
+        
+        private async Task<IHttpSession> SendRequestInternal(string host, int port, IHttpRequest? request)
         {
             ValidateRuntime();
             
-            ITcpSession? session = null;
+            IHttpSession? http_session = null;
             try
             {
-                session = await SessionFactory.Connect(host, port);
-                Sessions.GetOrAdd(session.Id, session);
+                var tcp_session = await SessionFactory.Connect(host, port);
+                http_session = AddSession(tcp_session);
+                
                 if (!(request is null))
                 {
                     var http = request.ToHttp();
-                    await session.Write(http, Canceller!.Token);
+                    await tcp_session.Write(http, Canceller!.Token);
                 }
-                return session;
+                
+                return http_session;
             }
             catch (Exception)
             {
-                if (!(session is null))
-                {
-                    Sessions.Remove(session.Id, out _);
-                    session.Close();
-                }
+                RemoveSessionAndClose(http_session);
                 
                 throw;
             }
@@ -136,19 +137,37 @@ namespace Caesura.LibNetwork.Http
                     continue;
                 }
                 
+                ITcpSession? tcp_session = null;
+                IHttpSession? http_session = null;
                 try
                 {
-                    var session = SessionFactory.AcceptTcpConnection(token);
-                    Sessions.GetOrAdd(session.Id, session);
+                    tcp_session  = SessionFactory.AcceptTcpConnection(token);
+                    http_session = AddSession(tcp_session);
                 }
                 catch (SocketException se)
                 {
+                    OnAnyException();
+                    
                     await OnSocketException(se.ErrorCode);
                 }
                 catch (Exception e)
                 {
+                    OnAnyException();
+                    
                     await OnUnhandledException(e);
                     throw;
+                }
+                
+                void OnAnyException()
+                {
+                    if (!(http_session is null))
+                    {
+                        RemoveSessionAndClose(http_session);
+                    }
+                    else if (!(tcp_session is null))
+                    {
+                        tcp_session.Close();
+                    }
                 }
             }
         }
@@ -167,6 +186,9 @@ namespace Caesura.LibNetwork.Http
                         break;
                     }
                     
+                    
+                    
+                    /*
                     session_kvp.Value.Pulse();
                     
                     if (session_kvp.Value.DataAvailable)
@@ -181,6 +203,7 @@ namespace Caesura.LibNetwork.Http
                             remove_ids.Add(session_kvp.Key);
                         }
                     }
+                    */
                 }
                 if (remove_ids.Count > 0)
                 {
@@ -198,6 +221,37 @@ namespace Caesura.LibNetwork.Http
                 
                 await Task.Delay(1);
             }
+        }
+        
+        private IHttpSession AddSession(ITcpSession tcp_session)
+        {
+            var http_session = Config.Http.Factories.HttpSessionFactory(Config, tcp_session, Canceller!.Token);
+            Sessions.GetOrAdd(http_session.Id, http_session);
+            return http_session;
+        }
+        
+        private IHttpSession? RemoveSession(IHttpSession session) => RemoveSession(session.Id);
+        
+        private IHttpSession? RemoveSession(Guid id)
+        {
+            Sessions.TryRemove(id, out var ret);
+            return ret;
+        }
+        
+        private bool RemoveSessionAndClose(IHttpSession? session)
+        {
+            if (session is null)
+            {
+                return false;
+            }
+            
+            var s = RemoveSession(session);
+            if (!(s is null))
+            {
+                s.Close();
+                return true;
+            }
+            return false;
         }
         
         public void Dispose()

@@ -13,6 +13,7 @@ namespace Caesura.LibNetwork.Http
         private CancellationToken _token;
         
         public string Name { get; set; }
+        public Guid Id { get; protected set; }
         
         public event Func<IHttpRequest, HttpSession, Task> OnGET;
         public event Func<IHttpRequest, HttpSession, Task> OnDELETE;
@@ -37,6 +38,7 @@ namespace Caesura.LibNetwork.Http
             _token     = token;
             
             Name       = nameof(HttpSession);
+            Id         = Guid.NewGuid();
             
             OnGET     = delegate { return Task.CompletedTask; };
             OnDELETE  = delegate { return Task.CompletedTask; };

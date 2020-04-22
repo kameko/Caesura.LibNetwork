@@ -25,10 +25,12 @@ namespace Caesura.LibNetwork.Http
     public class HttpConfigFactories
     {
         public Func<LibNetworkConfig, StreamReader, CancellationToken, IHttpRequest> HttpRequestFactory { get; set; }
+        public Func<LibNetworkConfig, ITcpSession, CancellationToken, IHttpSession> HttpSessionFactory { get; set; }
         
         public HttpConfigFactories()
         {
             HttpRequestFactory = (c, s, t) => HttpRequest.FromStream(s, c.Http.HeaderAmountLimit, t);
+            HttpSessionFactory = (c, p, t) => new HttpSession(c, p, t);
         }
         
         public static HttpConfigFactories GetDefault()
