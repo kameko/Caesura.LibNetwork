@@ -24,6 +24,7 @@ namespace Caesura.LibNetwork.Http
         event Func<Exception, Task> OnUnhandledException;
         
         Task Respond(IHttpResponse response);
+        void Stop();
         void Close();
     }
 }

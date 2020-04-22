@@ -80,10 +80,15 @@ namespace Caesura.LibNetwork.Http
                 }
                 else
                 {
+                    // TODO: don't delay every time there isn't data available. Rather
+                    // check after a few seconds or so and then start delaying, until
+                    // more data comes, then reset the counter.
                     await Task.Delay(15);
                 }
             }
         }
+        
+        public void Stop() => Close();
         
         public void Close()
         {
