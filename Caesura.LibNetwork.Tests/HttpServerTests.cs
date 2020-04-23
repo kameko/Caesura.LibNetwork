@@ -29,76 +29,81 @@ namespace Caesura.LibNetwork.Tests
         [Fact]
         public async Task basic_test_1()
         {
+            // TODO: debug. Something is throwing an EndOfStreamException too.
+            
             var got_request  = false;
-            // var got_response = false;
+            var got_response = false;
+            
+            var server1_err_spot = 0;
+            var server2_err_spot = 0;
+            Exception? server1_exception = null;
+            Exception? server2_exception = null;
             
             var config1 = new LibNetworkConfig()
             {
                 Port = 1,
             };
-            
+            //config1.Http.ThreadPerConnection = false;
             var mock_session_factory1 = new MockTcpSessionFactory(config1);
-            config1.Factories.TcpSessionFactoryFactory = c => mock_session_factory1;
+            config1.Factories.TcpSessionFactoryFactory = _ => mock_session_factory1;
             
             var config2 = new LibNetworkConfig()
             {
                 Port = 2,
             };
+            //config2.Http.ThreadPerConnection = false;
             var mock_session_factory2 = new MockTcpSessionFactory(config2);
-            config2.Factories.TcpSessionFactoryFactory = c => mock_session_factory2;
+            config2.Factories.TcpSessionFactoryFactory = _ => mock_session_factory2;
             
             var server1 = new HttpServer(config1);
             var server2 = new HttpServer(config2);
             
-            /*
-            server2.OnGET += async (req, session) =>
+            server1.OnUnhandledException += e => { server1_exception = e; server1_err_spot = 1; return Task.CompletedTask; };
+            server2.OnUnhandledException += e => { server2_exception = e; server2_err_spot = 1; return Task.CompletedTask; };
+            server1.OnSessionException   += e => { server1_exception = e; server1_err_spot = 2; return Task.CompletedTask; };
+            server2.OnSessionException   += e => { server2_exception = e; server2_err_spot = 2; return Task.CompletedTask; };
+            
+            server2.OnNewConnection += session =>
             {
-                got_request = true;
-                
-                var response = new HttpResponse(
-                    HttpVersion.HTTP1_1,
-                    HttpStatusCode.OK,
-                    new HttpMessage(
-                        new HttpHeaders()
-                        {
-                            new HttpHeader("Accept-Language", "en-US"),
-                            new HttpHeader("Host", "localhost:4899"),
-                            new HttpHeader("User-Agent", "Solace NT"),
-                        },
-                        new HttpBody(
-                            "{\r\n    \"message\": \"hello back to you!\"\r\n}"
+                session.OnUnhandledException += e => { server2_exception = e; server2_err_spot = 3; return Task.CompletedTask; };
+                session.OnGET += async (req, session) =>
+                {
+                    got_request = true;
+                    
+                    var response = new HttpResponse(
+                        HttpVersion.HTTP1_1,
+                        HttpStatusCode.OK,
+                        new HttpMessage(
+                            new HttpHeaders()
+                            {
+                                new HttpHeader("Accept-Language", "en-US"),
+                                new HttpHeader("Host", "localhost:2"),
+                                new HttpHeader("User-Agent", "Solace NT"),
+                            },
+                            new HttpBody(
+                                "{\r\n    \"message\": \"hello back to you!\"\r\n}"
+                            )
                         )
-                    )
-                );
-                await session.Respond(response);
-            };
-            
-            server1.OnAnyValidRequest += (req, session) =>
-            {
-                if (req.Kind != HttpRequestKind.GET)
-                {
-                    throw new InvalidOperationException("Should not get here.");
-                }
+                    );
+                    
+                    await Task.Delay(1_000);
+                    
+                    await session.Respond(response);
+                };
+                
                 return Task.CompletedTask;
             };
             
-            server2.OnAnyValidRequest += (req, session) =>
-            {
-                if (req.Kind != HttpRequestKind.GET)
-                {
-                    throw new InvalidOperationException("Should not get here.");
-                }
-                return Task.CompletedTask;
-            };
-            */
+            var server1_task = server1.StartAsync();
+            var server2_task = server2.StartAsync();
             
-            server1.OnUnhandledException += e => throw e;
-            server2.OnUnhandledException += e => throw e;
+            _ = server1_task.ContinueWith(t => { if (t.IsFaulted) { server1_exception = t.Exception; server1_err_spot = 4; } });
+            _ = server2_task.ContinueWith(t => { if (t.IsFaulted) { server2_exception = t.Exception; server2_err_spot = 4; } });
             
-            server1.Start();
-            server2.Start();
+            // FIXME: server needs time to boot up
+            await Task.Delay(1_000);
             
-            var response = new HttpRequest(
+            var request1 = new HttpRequest(
                 HttpRequestKind.GET,
                 "/some/resource.json",
                 HttpVersion.HTTP1_1,
@@ -106,7 +111,6 @@ namespace Caesura.LibNetwork.Tests
                     new HttpHeaders()
                     {
                         new HttpHeader("Accept-Language", "en-US"),
-                        new HttpHeader("Host", "localhost:4899"),
                         new HttpHeader("User-Agent", "Solace NT"),
                     },
                     new HttpBody(
@@ -114,20 +118,35 @@ namespace Caesura.LibNetwork.Tests
                     )
                 )
             );
-            
             var stream1 = new MemoryStream();
-            mock_session_factory2.SimulateConnection(stream1, port: 1);
-            var session1 = await server2.SendRequest("localhost", 1);
+            mock_session_factory1.SimulateConnection(stream1, port: 2);
+            var session1 = await server1.SendRequest("localhost", 2, request1);
             
-            
+            session1.OnUnhandledException += e => { server1_exception = e; server1_err_spot = 5; return Task.CompletedTask; };
+            session1.OnGET += (resp, session) =>
+            {
+                got_response = true;
+                return Task.CompletedTask;
+            };
             
             await Task.Delay(5_000);
             
             server1.Stop();
             server2.Stop();
             
+            if (!(server1_exception is null))
+            {
+                Write($"Server1 Exception, Spot {server1_err_spot}: " + server1_exception.ToString());
+                throw server1_exception;
+            }
+            if (!(server2_exception is null))
+            {
+                Write($"Server2 Exception, Spot {server2_err_spot}: " + server2_exception.ToString());
+                throw server2_exception;
+            }
+            
             Assert.True(got_request);
-            // Assert.True(got_response);
+            Assert.True(got_response);
         }
     }
 }

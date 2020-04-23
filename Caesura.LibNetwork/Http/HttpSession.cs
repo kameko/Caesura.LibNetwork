@@ -5,6 +5,8 @@ namespace Caesura.LibNetwork.Http
     using System.Threading;
     using System.Threading.Tasks;
     
+    // TODO: buffer requests until a handler is hooked.
+    
     public class HttpSession : IHttpSession
     {
         private LibNetworkConfig _config;
@@ -99,13 +101,26 @@ namespace Caesura.LibNetwork.Http
                     
                     if (delay > 0)
                     {
-                        try
+                        // If the delay is under a single Windows clock
+                        // resolution cycle (15ms) then skip setting up
+                        // the try/catch frame for better perforomance.
+                        // Otherwise the delay could be a very long time,
+                        // and we need to use the CancellationToken, thus
+                        // having to catch a TaskCancellationException.
+                        if (delay < 16)
                         {
-                            await Task.Delay(delay, token);
+                            await Task.Delay(delay);
                         }
-                        catch (TaskCanceledException)
+                        else
                         {
-                            break;
+                            try
+                            {
+                                await Task.Delay(delay, token);
+                            }
+                            catch (TaskCanceledException)
+                            {
+                                break;
+                            }
                         }
                     }
                 }

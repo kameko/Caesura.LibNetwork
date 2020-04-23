@@ -11,15 +11,27 @@ namespace Caesura.LibNetwork.Tests
     {
         private MemoryStream _memstream;
         private StreamWriter _writer;
+        private bool available;
+        
         public Guid Id { get; private set; }
         public TcpSessionState State { get; private set; }
         public StreamReader Output { get; private set; }
-        public bool DataAvailable => _memstream.Length > 0;
+        public bool DataAvailable
+        {
+            get
+            {
+                var a = available;
+                available = false;
+                return available;
+            }
+        }
         
         public MockTcpSession(MemoryStream memstream, int ticks)
         {
             _memstream     = memstream;
             _writer        = new StreamWriter(memstream, Encoding.UTF8);
+            available      = false;
+            
             Id             = Guid.NewGuid();
             State          = TcpSessionState.Ready;
             Output         = new StreamReader(memstream, Encoding.UTF8);
@@ -31,9 +43,12 @@ namespace Caesura.LibNetwork.Tests
             {
                 throw new TcpSessionNotActiveException("Session is no longer active.");
             }
+            
+            _memstream.Position = 0;
             await _writer.WriteAsync(text);
             await _writer.FlushAsync();
             _memstream.Position = 0;
+            available = true;
         }
         
         public void Close()

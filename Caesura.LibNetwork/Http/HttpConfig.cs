@@ -18,7 +18,7 @@ namespace Caesura.LibNetwork.Http
             Factories                              = HttpConfigFactories.GetDefault();
             HeaderAmountLimit                      = 100;
             ConnectionLoopMillisecondDelayInterval = -1;
-            ThreadPerConnection                    = false;
+            ThreadPerConnection                    = true;
             SessionTimeout                         = TimeSpan.FromMinutes(1);
         }
         
