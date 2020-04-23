@@ -3,6 +3,7 @@ namespace Caesura.LibNetwork.Http
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     
     public interface IHttpSession : IDisposable
@@ -28,6 +29,8 @@ namespace Caesura.LibNetwork.Http
         event Func<Exception, Task> OnUnhandledException;
         
         Task Respond(IHttpResponse response);
+        Task Start(CancellationToken token);
+        Task Start(int delay, CancellationToken token);
         Task Pulse();
         void Stop();
         void Close();

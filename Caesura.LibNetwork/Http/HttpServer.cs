@@ -58,9 +58,12 @@ namespace Caesura.LibNetwork.Http
             SessionFactory.Stop();
             Canceller.Cancel();
             
-            foreach (var (id, session) in Sessions)
+            if (!Config.Http.ThreadPerConnection)
             {
-                session.Close();
+                foreach (var (id, session) in Sessions)
+                {
+                    session.Close();
+                }
             }
         }
         
@@ -137,7 +140,10 @@ namespace Caesura.LibNetwork.Http
                     await Task.Delay(Config.Http.ConnectionLoopMillisecondDelayInterval, token);
                 }
                 
-                await PulseSessions(token);
+                if (!Config.Http.ThreadPerConnection)
+                {
+                    await PulseSessions(token);
+                }
                 
                 if (Sessions.Count > Config.MaxConnections || !SessionFactory.Pending())
                 {
@@ -156,6 +162,14 @@ namespace Caesura.LibNetwork.Http
                     else
                     {
                         http_session = AddSession(tcp_session);
+                        if (Config.Http.ThreadPerConnection)
+                        {
+                            // TODO: might need to not await this, if this ends up blocking
+                            // the loop, then take the Task.Run out of HttpSession.Start() and
+                            // instead put a Task.Run here for a method that runs this and checks
+                            // for exceptions and reports them.
+                            await http_session.Start(Config.Http.ConnectionLoopMillisecondDelayInterval, token);
+                        }
                     }
                 }
                 catch (SocketException se)

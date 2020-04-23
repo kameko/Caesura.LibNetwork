@@ -76,6 +76,26 @@ namespace Caesura.LibNetwork.Http
             await _session.Write(http, _token);
         }
         
+        public Task Start(CancellationToken token) => Start(-1, token);
+        
+        public Task Start(int delay, CancellationToken token)
+        {
+            return Task.Run(async () =>
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    await Pulse();
+                    
+                    if (delay > 0)
+                    {
+                        await Task.Delay(delay, token);
+                    }
+                }
+                
+                Close();
+            });
+        }
+        
         public async Task Pulse()
         {
             if (_session.DataAvailable)
