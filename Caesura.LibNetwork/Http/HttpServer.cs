@@ -134,7 +134,7 @@ namespace Caesura.LibNetwork.Http
             {
                 if (Config.Http.ConnectionLoopMillisecondDelayInterval > 0)
                 {
-                    await Task.Delay(Config.Http.ConnectionLoopMillisecondDelayInterval);
+                    await Task.Delay(Config.Http.ConnectionLoopMillisecondDelayInterval, token);
                 }
                 
                 await PulseSessions(token);
