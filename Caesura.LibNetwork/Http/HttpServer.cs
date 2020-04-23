@@ -107,7 +107,10 @@ namespace Caesura.LibNetwork.Http
             {
                 Canceller = new CancellationTokenSource();
             }
-            ValidateRuntime();
+            if (Canceller.IsCancellationRequested)
+            {
+                Canceller = new CancellationTokenSource();
+            }
         }
         
         private void ValidateRuntime()
@@ -125,10 +128,15 @@ namespace Caesura.LibNetwork.Http
         private async Task ConnectionHandler()
         {
             ValidateRuntime();
+            
             var token = Canceller!.Token;
             while (!token.IsCancellationRequested)
             {
-                await Task.Delay(15);
+                if (Config.Http.ConnectionLoopMillisecondDelayInterval > 0)
+                {
+                    await Task.Delay(Config.Http.ConnectionLoopMillisecondDelayInterval);
+                }
+                
                 await PulseSessions(token);
                 
                 if (Sessions.Count > Config.MaxConnections || !SessionFactory.Pending())
@@ -224,12 +232,15 @@ namespace Caesura.LibNetwork.Http
             }
             
             var s = RemoveSession(session);
-            if (!(s is null))
+            if (s is null)
+            {
+                return false;
+            }
+            else
             {
                 s.Close();
                 return true;
             }
-            return false;
         }
         
         public void Dispose()
