@@ -116,6 +116,8 @@ namespace Caesura.LibNetwork.Http
         
         public async Task Pulse()
         {
+            // TODO: make sure all this timeout stuff works
+            
             last_pulse_time = new TimeSpan(DateTime.UtcNow.Ticks);
             
             if (_session.DataAvailable)
@@ -125,7 +127,7 @@ namespace Caesura.LibNetwork.Http
             }
             else
             {
-                var delta = Math.Abs(last_pulse_time.Ticks - last_response_time.Ticks);
+                var delta = Math.Abs((last_pulse_time - last_response_time).Ticks);
                 if (delta > Timeout.Ticks)
                 {
                     Close();
