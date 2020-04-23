@@ -10,8 +10,6 @@ namespace Caesura.LibNetwork
     
     internal class TcpSession : ITcpSession
     {
-        public static TcpSession Empty => new TcpSession();
-        
         private int _starter_ticks;
         private TcpClient _client;
         private StreamWriter _writer;
@@ -32,7 +30,7 @@ namespace Caesura.LibNetwork
             Output         = new StreamReader(_client.GetStream(), Encoding.UTF8);
         }
         
-        private TcpSession()
+        internal TcpSession()
         {
             _starter_ticks = 0;
             _client        = null!;

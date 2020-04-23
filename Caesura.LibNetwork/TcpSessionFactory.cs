@@ -8,6 +8,8 @@ namespace Caesura.LibNetwork
     
     public class TcpSessionFactory : ITcpSessionFactory
     {
+        public static ITcpSession Empty => new TcpSession();
+        
         private LibNetworkConfig Config;
         private TcpListener listener;
         
@@ -28,7 +30,7 @@ namespace Caesura.LibNetwork
             {
                 if (token.IsCancellationRequested)
                 {
-                    return TcpSession.Empty;
+                    return TcpSessionFactory.Empty;
                 }
                 
                 await Task.Delay(15, token);
