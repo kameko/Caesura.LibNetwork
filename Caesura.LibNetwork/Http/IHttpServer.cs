@@ -7,6 +7,7 @@ namespace Caesura.LibNetwork.Http
     public interface IHttpServer : IDisposable
     {
         event Func<Exception, Task> OnUnhandledException;
+        event Func<Exception, Task> OnSessionException;
         event Func<int, Task> OnSocketException;
         
         Task StartAsync();

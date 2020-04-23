@@ -17,8 +17,10 @@ namespace Caesura.LibNetwork.Http
         private CancellationTokenSource? Canceller;
         private ITcpSessionFactory SessionFactory;
         private ConcurrentDictionary<Guid, IHttpSession> Sessions;
+        private ConcurrentDictionary<Guid, Task> SessionTasks;
         
         public event Func<Exception, Task> OnUnhandledException;
+        public event Func<Exception, Task> OnSessionException;
         public event Func<int, Task> OnSocketException;
         
         public HttpServer(LibNetworkConfig config)
@@ -26,8 +28,10 @@ namespace Caesura.LibNetwork.Http
             Config         = config;
             SessionFactory = config.Factories.TcpSessionFactoryFactory(config);
             Sessions       = new ConcurrentDictionary<Guid, IHttpSession>();
+            SessionTasks   = new ConcurrentDictionary<Guid, Task>();
             
             OnUnhandledException = delegate { return Task.CompletedTask; };
+            OnSessionException   = delegate { return Task.CompletedTask; };
             OnSocketException    = delegate { return Task.CompletedTask; };
         }
         
@@ -137,7 +141,14 @@ namespace Caesura.LibNetwork.Http
             {
                 if (Config.Http.ConnectionLoopMillisecondDelayInterval > 0)
                 {
-                    await Task.Delay(Config.Http.ConnectionLoopMillisecondDelayInterval, token);
+                    try
+                    {
+                        await Task.Delay(Config.Http.ConnectionLoopMillisecondDelayInterval, token);
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        break;
+                    }
                 }
                 
                 if (!Config.Http.ThreadPerConnection)
@@ -164,11 +175,13 @@ namespace Caesura.LibNetwork.Http
                         http_session = AddSession(tcp_session);
                         if (Config.Http.ThreadPerConnection)
                         {
-                            // TODO: might need to not await this, if this ends up blocking
-                            // the loop, then take the Task.Run out of HttpSession.Start() and
-                            // instead put a Task.Run here for a method that runs this and checks
-                            // for exceptions and reports them.
-                            await http_session.Start(Config.Http.ConnectionLoopMillisecondDelayInterval, token);
+                            var task = Task.Run(async () => 
+                                await StartSession(http_session, Config.Http.ConnectionLoopMillisecondDelayInterval, token)
+                            );
+                            // HttpSession.Start() might throw before we get to this line,
+                            // so StartSession() will run in a loop trying to remove it
+                            // for a little while.
+                            SessionTasks.TryAdd(http_session.Id, task);
                         }
                     }
                 }
@@ -214,6 +227,57 @@ namespace Caesura.LibNetwork.Http
                 if (session.Closed)
                 {
                     RemoveSession(id);
+                }
+            }
+        }
+        
+        private async Task StartSession(IHttpSession session, int delay, CancellationToken token)
+        {
+            try
+            {
+                await session.Start(delay, token);
+            }
+            catch (Exception e)
+            {
+                await OnSessionException.Invoke(e);
+            }
+            finally
+            {
+                RemoveSession(session);
+                
+                // Repeatedly attempt to remove the session, just in case
+                // HttpSession.Start() threw before it was added to the
+                // SessionTasks collection (see above in ConnectionHandler().)
+                // It should take a total of 3 seconds (30 tries of 100 ms delay)
+                // before it gives up.
+                var remove_success     = false;
+                var remove_attempts    = 30; // arbitrary magic numbers
+                const int remove_delay = 100;
+                while (!remove_success && !token.IsCancellationRequested)
+                {
+                    remove_success = SessionTasks.TryRemove(session.Id, out _);
+                    if (!remove_success)
+                    {
+                        remove_attempts--;
+                        if (remove_attempts <= 0)
+                        {
+                            await OnSessionException.Invoke(
+                                new InvalidOperationException(
+                                    "Could not remove session task from internal session task collection."
+                                )
+                            );
+                            break;
+                        }
+                        
+                        try
+                        {
+                            await Task.Delay(remove_delay, token);
+                        }
+                        catch (TaskCanceledException)
+                        {
+                            break;
+                        }
+                    }
                 }
             }
         }

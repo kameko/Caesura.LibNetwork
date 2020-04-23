@@ -10,22 +10,25 @@ namespace Caesura.LibNetwork.Http
     {
         string Name { get; set; }
         Guid Id { get; }
+        TimeSpan Timeout { get; set; }
         ITcpSession TcpSession { get; }
         bool Closed { get; }
         
-        event Func<IHttpRequest, HttpSession, Task> OnGET;
-        event Func<IHttpRequest, HttpSession, Task> OnDELETE;
-        event Func<IHttpRequest, HttpSession, Task> OnPUT;
-        event Func<IHttpRequest, HttpSession, Task> OnPOST;
+        event Func<IHttpRequest, IHttpSession, Task> OnGET;
+        event Func<IHttpRequest, IHttpSession, Task> OnDELETE;
+        event Func<IHttpRequest, IHttpSession, Task> OnPUT;
+        event Func<IHttpRequest, IHttpSession, Task> OnPOST;
         
-        event Func<IHttpRequest, HttpSession, Task> OnHEAD;
-        event Func<IHttpRequest, HttpSession, Task> OnPATCH;
-        event Func<IHttpRequest, HttpSession, Task> OnTRACE;
-        event Func<IHttpRequest, HttpSession, Task> OnOPTIONS;
-        event Func<IHttpRequest, HttpSession, Task> OnCONNECT;
+        event Func<IHttpRequest, IHttpSession, Task> OnHEAD;
+        event Func<IHttpRequest, IHttpSession, Task> OnPATCH;
+        event Func<IHttpRequest, IHttpSession, Task> OnTRACE;
+        event Func<IHttpRequest, IHttpSession, Task> OnOPTIONS;
+        event Func<IHttpRequest, IHttpSession, Task> OnCONNECT;
         
-        event Func<IHttpRequest, HttpSession, Task> OnAnyValidRequest;
-        event Func<IHttpRequest, HttpSession, Task> OnInvalidRequest;
+        event Func<IHttpRequest, IHttpSession, Task> OnAnyValidRequest;
+        event Func<IHttpRequest, IHttpSession, Task> OnInvalidRequest;
+        
+        event Func<IHttpSession, Task> OnTimeoutDisconnect;
         event Func<Exception, Task> OnUnhandledException;
         
         Task Respond(IHttpResponse response);

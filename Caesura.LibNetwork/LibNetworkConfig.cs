@@ -14,18 +14,16 @@ namespace Caesura.LibNetwork
         public IPAddress IP { get; set; }
         public int Port { get; set; }
         public int MaxConnections { get; set; }
-        public int ConnectionTimeoutTicks { get; set; }
-        public int DefaultTimeoutMilliseconds { get; set; }
+        public int TcpConnectionTimeoutTicks { get; set; }
         
         public LibNetworkConfig()
         {
-            Factories                   = LibNetworkFactories.GetDefault();
-            Http                        = HttpConfig.GetDefault();
-            IP                          = IPAddress.Any;
-            Port                        = 4988;
-            MaxConnections              = 20;
-            ConnectionTimeoutTicks      = 10_000;
-            DefaultTimeoutMilliseconds  = 5_000;
+            Factories                 = LibNetworkFactories.GetDefault();
+            Http                      = HttpConfig.GetDefault();
+            IP                        = IPAddress.Any;
+            Port                      = 4988;
+            MaxConnections            = 20;
+            TcpConnectionTimeoutTicks = 10_000;
         }
         
         public static LibNetworkConfig GetDefault()

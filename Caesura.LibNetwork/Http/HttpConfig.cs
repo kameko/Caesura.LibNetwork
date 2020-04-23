@@ -11,13 +11,15 @@ namespace Caesura.LibNetwork.Http
         public int HeaderAmountLimit { get; set; }
         public int ConnectionLoopMillisecondDelayInterval { get; set; }
         public bool ThreadPerConnection { get; set; }
+        public TimeSpan SessionTimeout { get; set; }
         
         public HttpConfig()
         {
-            Factories = HttpConfigFactories.GetDefault();
-            HeaderAmountLimit = 100;
+            Factories                              = HttpConfigFactories.GetDefault();
+            HeaderAmountLimit                      = 100;
             ConnectionLoopMillisecondDelayInterval = -1;
-            ThreadPerConnection = false;
+            ThreadPerConnection                    = false;
+            SessionTimeout                         = TimeSpan.FromMinutes(1);
         }
         
         public static HttpConfig GetDefault()

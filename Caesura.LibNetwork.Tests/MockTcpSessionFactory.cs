@@ -46,7 +46,7 @@ namespace Caesura.LibNetwork.Tests
                 await Task.Delay(15, token);
             }
             
-            var session = new MockTcpSession(simulated_stream!, Config.ConnectionTimeoutTicks);
+            var session = new MockTcpSession(simulated_stream!, Config.TcpConnectionTimeoutTicks);
             streams.Add(simulated_port, simulated_stream!);
             
             simulated_stream = null;
@@ -83,7 +83,7 @@ namespace Caesura.LibNetwork.Tests
                 streams.Add(port, stream);
             }
             
-            var session = new MockTcpSession(stream, Config.ConnectionTimeoutTicks);
+            var session = new MockTcpSession(stream, Config.TcpConnectionTimeoutTicks);
             return session;
         }
         

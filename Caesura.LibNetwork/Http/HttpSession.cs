@@ -13,24 +13,30 @@ namespace Caesura.LibNetwork.Http
         private CancellationToken _token;
         private bool _closed;
         
+        private TimeSpan last_response_time;
+        private TimeSpan current_response_time;
+        
         public string Name { get; set; }
         public Guid Id { get; protected set; }
+        public TimeSpan Timeout { get; set; }
         public ITcpSession TcpSession => _session;
         public bool Closed => _closed;
         
-        public event Func<IHttpRequest, HttpSession, Task> OnGET;
-        public event Func<IHttpRequest, HttpSession, Task> OnDELETE;
-        public event Func<IHttpRequest, HttpSession, Task> OnPUT;
-        public event Func<IHttpRequest, HttpSession, Task> OnPOST;
+        public event Func<IHttpRequest, IHttpSession, Task> OnGET;
+        public event Func<IHttpRequest, IHttpSession, Task> OnDELETE;
+        public event Func<IHttpRequest, IHttpSession, Task> OnPUT;
+        public event Func<IHttpRequest, IHttpSession, Task> OnPOST;
         
-        public event Func<IHttpRequest, HttpSession, Task> OnHEAD;
-        public event Func<IHttpRequest, HttpSession, Task> OnPATCH;
-        public event Func<IHttpRequest, HttpSession, Task> OnTRACE;
-        public event Func<IHttpRequest, HttpSession, Task> OnOPTIONS;
-        public event Func<IHttpRequest, HttpSession, Task> OnCONNECT;
+        public event Func<IHttpRequest, IHttpSession, Task> OnHEAD;
+        public event Func<IHttpRequest, IHttpSession, Task> OnPATCH;
+        public event Func<IHttpRequest, IHttpSession, Task> OnTRACE;
+        public event Func<IHttpRequest, IHttpSession, Task> OnOPTIONS;
+        public event Func<IHttpRequest, IHttpSession, Task> OnCONNECT;
         
-        public event Func<IHttpRequest, HttpSession, Task> OnAnyValidRequest;
-        public event Func<IHttpRequest, HttpSession, Task> OnInvalidRequest;
+        public event Func<IHttpRequest, IHttpSession, Task> OnAnyValidRequest;
+        public event Func<IHttpRequest, IHttpSession, Task> OnInvalidRequest;
+        
+        public event Func<IHttpSession, Task> OnTimeoutDisconnect;
         public event Func<Exception, Task> OnUnhandledException;
         
         internal HttpSession(LibNetworkConfig config, ITcpSession session, CancellationToken token)
@@ -41,8 +47,12 @@ namespace Caesura.LibNetwork.Http
             _token     = token;
             _closed    = false;
             
+            last_response_time    = new TimeSpan(DateTime.UtcNow.Ticks);
+            current_response_time = last_response_time;
+            
             Name       = nameof(HttpSession);
             Id         = Guid.NewGuid();
+            Timeout    = config.Http.SessionTimeout;
             
             OnGET      = delegate { return Task.CompletedTask; };
             OnDELETE   = delegate { return Task.CompletedTask; };
@@ -58,6 +68,7 @@ namespace Caesura.LibNetwork.Http
             OnAnyValidRequest = delegate { return Task.CompletedTask; };
             OnInvalidRequest  = delegate { return Task.CompletedTask; };
             
+            OnTimeoutDisconnect  = delegate { return Task.CompletedTask; };
             OnUnhandledException = delegate { return Task.CompletedTask; };
         }
         
@@ -82,13 +93,20 @@ namespace Caesura.LibNetwork.Http
         {
             return Task.Run(async () =>
             {
-                while (!token.IsCancellationRequested)
+                while (!token.IsCancellationRequested && !_closed)
                 {
                     await Pulse();
                     
                     if (delay > 0)
                     {
-                        await Task.Delay(delay, token);
+                        try
+                        {
+                            await Task.Delay(delay, token);
+                        }
+                        catch (TaskCanceledException)
+                        {
+                            break;
+                        }
                     }
                 }
                 
@@ -100,7 +118,20 @@ namespace Caesura.LibNetwork.Http
         {
             if (_session.DataAvailable)
             {
-                await HandleSessionSafely(_session);
+                last_response_time = new TimeSpan(DateTime.UtcNow.Ticks);
+                await HandleSession(_session);
+            }
+            else
+            {
+                current_response_time = new TimeSpan(DateTime.UtcNow.Ticks);
+                var delta = current_response_time - last_response_time;
+                if (Timeout > delta)
+                {
+                    Close();
+                    await OnTimeoutDisconnect.Invoke(this);
+                }
+                
+                last_response_time = current_response_time;
             }
         }
         
@@ -113,16 +144,16 @@ namespace Caesura.LibNetwork.Http
             _session.Close();
         }
         
-        private async Task HandleSessionSafely(ITcpSession session)
+        private async Task HandleSession(ITcpSession session)
         {
             try
             {
                 if (session.State == TcpSessionState.Closed)
                 {
-                    throw new TcpSessionNotActiveException("Session is no longer active.");
+                    throw new TcpSessionNotActiveException();
                 }
                 
-                await HandleSession(session);
+                await InternalHandleSession(session);
             }
             catch (Exception e)
             {
@@ -132,7 +163,7 @@ namespace Caesura.LibNetwork.Http
             }
         }
         
-        private async Task HandleSession(ITcpSession session)
+        private async Task InternalHandleSession(ITcpSession session)
         {
             var request          = _config.Http.Factories.HttpRequestFactory(_config, session.Output, _canceller.Token);
             var response_session = this;

@@ -37,7 +37,7 @@ namespace Caesura.LibNetwork
             }
             
             var client  = listener.AcceptTcpClient();
-            var session = new TcpSession(client, Config.ConnectionTimeoutTicks);
+            var session = new TcpSession(client, Config.TcpConnectionTimeoutTicks);
             return session;
         }
         
@@ -46,7 +46,7 @@ namespace Caesura.LibNetwork
             var client = new TcpClient();
             try
             {
-                var session = new TcpSession(client, Config.ConnectionTimeoutTicks);
+                var session = new TcpSession(client, Config.TcpConnectionTimeoutTicks);
                 await client.ConnectAsync(host, port);
                 return session;
             }
