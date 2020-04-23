@@ -20,14 +20,11 @@ namespace Caesura.LibNetwork
     public interface ITcpSession : IDisposable
     {
         Guid Id { get; }
-        int TicksLeft { get; }
         TcpSessionState State { get; }
         StreamReader Output { get; }
         bool DataAvailable { get; }
         
         Task Write(string text, CancellationToken token);
-        void Pulse();
-        void ResetTicks();
         void Close();
     }
 }

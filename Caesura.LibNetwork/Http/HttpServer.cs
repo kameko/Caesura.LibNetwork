@@ -58,9 +58,9 @@ namespace Caesura.LibNetwork.Http
             SessionFactory.Stop();
             Canceller.Cancel();
             
-            foreach (var session_kvp in Sessions)
+            foreach (var (id, session) in Sessions)
             {
-                session_kvp.Value.Close();
+                session.Close();
             }
         }
         
@@ -98,10 +98,7 @@ namespace Caesura.LibNetwork.Http
         
         private Task StartAllSubsystemTasks()
         {
-            return Task.WhenAll(
-                Task.Run(ConnectionWaiter),
-                Task.Run(SessionHandler)
-            );
+            return Task.Run(ConnectionHandler);
         }
         
         private void ValidateStart()
@@ -125,15 +122,17 @@ namespace Caesura.LibNetwork.Http
             }
         }
         
-        private async Task ConnectionWaiter()
+        private async Task ConnectionHandler()
         {
             ValidateRuntime();
             var token = Canceller!.Token;
             while (!token.IsCancellationRequested)
             {
+                await Task.Delay(15);
+                await PulseSessions(token);
+                
                 if (Sessions.Count > Config.MaxConnections || !SessionFactory.Pending())
                 {
-                    await Task.Delay(15);
                     continue;
                 }
                 
@@ -142,13 +141,13 @@ namespace Caesura.LibNetwork.Http
                 try
                 {
                     tcp_session = await SessionFactory.AcceptTcpConnection(token);
-                    if (!token.IsCancellationRequested)
+                    if (token.IsCancellationRequested)
                     {
-                        http_session = AddSession(tcp_session);
+                        tcp_session.Close();
                     }
                     else
                     {
-                        tcp_session.Close();
+                        http_session = AddSession(tcp_session);
                     }
                 }
                 catch (SocketException se)
@@ -179,60 +178,21 @@ namespace Caesura.LibNetwork.Http
             }
         }
         
-        private async Task SessionHandler()
+        private async Task PulseSessions(CancellationToken token)
         {
-            ValidateRuntime();
-            var token = Canceller!.Token;
-            var remove_ids = new List<Guid>();
-            while (!token.IsCancellationRequested)
+            foreach (var (id, session) in Sessions)
             {
                 if (token.IsCancellationRequested)
                 {
                     break;
                 }
                 
-                foreach (var session_kvp in Sessions)
-                {
-                    if (token.IsCancellationRequested)
-                    {
-                        break;
-                    }
-                    
-                    
-                    
-                    /*
-                    session_kvp.Value.Pulse();
-                    
-                    if (session_kvp.Value.DataAvailable)
-                    {
-                        session_kvp.Value.ResetTicks();
-                        // await HandleSessionSafely(session_kvp.Value);
-                    }
-                    else
-                    {
-                        if (session_kvp.Value.State == TcpSessionState.Closed)
-                        {
-                            remove_ids.Add(session_kvp.Key);
-                        }
-                    }
-                    */
-                }
+                await session.Pulse();
                 
-                if (remove_ids.Count > 0)
+                if (session.Closed)
                 {
-                    foreach (var id in remove_ids)
-                    {
-                        if (token.IsCancellationRequested)
-                        {
-                            break;
-                        }
-                        
-                        Sessions.Remove(id, out _);
-                    }
-                    remove_ids.Clear();
+                    RemoveSession(id);
                 }
-                
-                await Task.Delay(15);
             }
         }
         

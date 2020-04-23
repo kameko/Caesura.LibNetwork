@@ -11,9 +11,12 @@ namespace Caesura.LibNetwork.Http
         private ITcpSession _session;
         private CancellationTokenSource _canceller;
         private CancellationToken _token;
+        private bool _closed;
         
         public string Name { get; set; }
         public Guid Id { get; protected set; }
+        public ITcpSession TcpSession => _session;
+        public bool Closed => _closed;
         
         public event Func<IHttpRequest, HttpSession, Task> OnGET;
         public event Func<IHttpRequest, HttpSession, Task> OnDELETE;
@@ -36,20 +39,21 @@ namespace Caesura.LibNetwork.Http
             _session   = session;
             _canceller = new CancellationTokenSource();
             _token     = token;
+            _closed    = false;
             
             Name       = nameof(HttpSession);
             Id         = Guid.NewGuid();
             
-            OnGET     = delegate { return Task.CompletedTask; };
-            OnDELETE  = delegate { return Task.CompletedTask; };
-            OnPUT     = delegate { return Task.CompletedTask; };
-            OnPOST    = delegate { return Task.CompletedTask; };
+            OnGET      = delegate { return Task.CompletedTask; };
+            OnDELETE   = delegate { return Task.CompletedTask; };
+            OnPUT      = delegate { return Task.CompletedTask; };
+            OnPOST     = delegate { return Task.CompletedTask; };
             
-            OnHEAD    = delegate { return Task.CompletedTask; };
-            OnPATCH   = delegate { return Task.CompletedTask; };
-            OnTRACE   = delegate { return Task.CompletedTask; };
-            OnOPTIONS = delegate { return Task.CompletedTask; };
-            OnCONNECT = delegate { return Task.CompletedTask; };
+            OnHEAD     = delegate { return Task.CompletedTask; };
+            OnPATCH    = delegate { return Task.CompletedTask; };
+            OnTRACE    = delegate { return Task.CompletedTask; };
+            OnOPTIONS  = delegate { return Task.CompletedTask; };
+            OnCONNECT  = delegate { return Task.CompletedTask; };
             
             OnAnyValidRequest = delegate { return Task.CompletedTask; };
             OnInvalidRequest  = delegate { return Task.CompletedTask; };
@@ -72,21 +76,11 @@ namespace Caesura.LibNetwork.Http
             await _session.Write(http, _token);
         }
         
-        public async Task Start()
+        public async Task Pulse()
         {
-            while (!_token.IsCancellationRequested && !_canceller.IsCancellationRequested)
+            if (_session.DataAvailable)
             {
-                if (_session.DataAvailable)
-                {
-                    await HandleSessionSafely(_session);
-                }
-                else
-                {
-                    // TODO: don't delay every time there isn't data available. Rather
-                    // check after a few seconds or so and then start delaying, until
-                    // more data comes, then reset the counter.
-                    await Task.Delay(15);
-                }
+                await HandleSessionSafely(_session);
             }
         }
         
@@ -94,6 +88,7 @@ namespace Caesura.LibNetwork.Http
         
         public void Close()
         {
+            _closed = true;
             _canceller.Cancel();
             _session.Close();
         }

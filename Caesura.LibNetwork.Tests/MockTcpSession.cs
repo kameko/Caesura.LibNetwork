@@ -9,11 +9,9 @@ namespace Caesura.LibNetwork.Tests
     
     public class MockTcpSession : ITcpSession
     {
-        private int _starter_ticks;
         private MemoryStream _memstream;
         private StreamWriter _writer;
         public Guid Id { get; private set; }
-        public int TicksLeft { get; private set; }
         public TcpSessionState State { get; private set; }
         public StreamReader Output { get; private set; }
         public bool DataAvailable => _memstream.Length > 0;
@@ -21,10 +19,8 @@ namespace Caesura.LibNetwork.Tests
         public MockTcpSession(MemoryStream memstream, int ticks)
         {
             _memstream     = memstream;
-            _starter_ticks = ticks;
             _writer        = new StreamWriter(memstream, Encoding.UTF8);
             Id             = Guid.NewGuid();
-            TicksLeft      = ticks;
             State          = TcpSessionState.Ready;
             Output         = new StreamReader(memstream, Encoding.UTF8);
         }
@@ -40,36 +36,11 @@ namespace Caesura.LibNetwork.Tests
             _memstream.Position = 0;
         }
         
-        public void Pulse()
-        {
-            CalculateTicks();
-        }
-        
-        public void ResetTicks()
-        {
-            TicksLeft = _starter_ticks;
-        }
-        
         public void Close()
         {
             State = TcpSessionState.Closed;
             _memstream.Close();
             Output.Close();
-        }
-        
-        private void CalculateTicks()
-        {
-            if (_starter_ticks <= -1)
-            {
-                return;
-            }
-            
-            TicksLeft = TicksLeft <= 0 ? 0 : TicksLeft - 1;
-            
-            if (TicksLeft <= 0)
-            {
-                Close();
-            }
         }
         
         public void Dispose()

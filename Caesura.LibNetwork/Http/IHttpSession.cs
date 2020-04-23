@@ -9,6 +9,9 @@ namespace Caesura.LibNetwork.Http
     {
         string Name { get; set; }
         Guid Id { get; }
+        ITcpSession TcpSession { get; }
+        bool Closed { get; }
+        
         event Func<IHttpRequest, HttpSession, Task> OnGET;
         event Func<IHttpRequest, HttpSession, Task> OnDELETE;
         event Func<IHttpRequest, HttpSession, Task> OnPUT;
@@ -25,6 +28,7 @@ namespace Caesura.LibNetwork.Http
         event Func<Exception, Task> OnUnhandledException;
         
         Task Respond(IHttpResponse response);
+        Task Pulse();
         void Stop();
         void Close();
     }
