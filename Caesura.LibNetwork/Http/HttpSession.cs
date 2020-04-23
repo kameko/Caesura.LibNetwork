@@ -127,8 +127,8 @@ namespace Caesura.LibNetwork.Http
             }
             else
             {
-                var delta = Math.Abs((last_pulse_time - last_response_time).Ticks);
-                if (delta > Timeout.Ticks)
+                var delta = new TimeSpan(Math.Abs((last_response_time - last_pulse_time).Ticks));
+                if (delta > Timeout)
                 {
                     Close();
                     await OnTimeoutDisconnect.Invoke(this);

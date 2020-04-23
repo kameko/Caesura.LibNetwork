@@ -180,7 +180,7 @@ namespace Caesura.LibNetwork.Http
                             );
                             // HttpSession.Start() might throw before we get to this line,
                             // so StartSession() will run in a loop trying to remove it
-                            // for a little while.
+                            // for a little while (see comments below.)
                             SessionTasks.TryAdd(http_session.Id, task);
                         }
                     }
@@ -248,7 +248,7 @@ namespace Caesura.LibNetwork.Http
                 // Repeatedly attempt to remove the session, just in case
                 // HttpSession.Start() threw before it was added to the
                 // SessionTasks collection (see above in ConnectionHandler().)
-                // It should take a total of 3 seconds (30 tries of 100 ms delay)
+                // It should take around 3 seconds (30 tries of 100 ms delay)
                 // before it gives up.
                 var remove_success     = false;
                 var remove_attempts    = 30; // arbitrary magic numbers
