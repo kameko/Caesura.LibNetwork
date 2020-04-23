@@ -14,7 +14,7 @@ namespace Caesura.LibNetwork.Http
         private bool _closed;
         
         private TimeSpan last_response_time;
-        private TimeSpan current_response_time;
+        private TimeSpan last_pulse_time;
         
         public string Name { get; set; }
         public Guid Id { get; protected set; }
@@ -47,8 +47,8 @@ namespace Caesura.LibNetwork.Http
             _token     = token;
             _closed    = false;
             
-            last_response_time    = new TimeSpan(DateTime.UtcNow.Ticks);
-            current_response_time = last_response_time;
+            last_response_time = new TimeSpan(DateTime.UtcNow.Ticks);
+            last_pulse_time    = last_response_time;
             
             Name       = nameof(HttpSession);
             Id         = Guid.NewGuid();
@@ -116,6 +116,8 @@ namespace Caesura.LibNetwork.Http
         
         public async Task Pulse()
         {
+            last_pulse_time = new TimeSpan(DateTime.UtcNow.Ticks);
+            
             if (_session.DataAvailable)
             {
                 last_response_time = new TimeSpan(DateTime.UtcNow.Ticks);
@@ -123,15 +125,12 @@ namespace Caesura.LibNetwork.Http
             }
             else
             {
-                current_response_time = new TimeSpan(DateTime.UtcNow.Ticks);
-                var delta = current_response_time - last_response_time;
-                if (Timeout > delta)
+                var delta = Math.Abs(last_pulse_time.Ticks - last_response_time.Ticks);
+                if (delta > Timeout.Ticks)
                 {
                     Close();
                     await OnTimeoutDisconnect.Invoke(this);
                 }
-                
-                last_response_time = current_response_time;
             }
         }
         
