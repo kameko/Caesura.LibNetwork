@@ -29,8 +29,6 @@ namespace Caesura.LibNetwork.Tests
         [Fact]
         public async Task basic_test_1()
         {
-            // TODO: debug. Something is throwing an EndOfStreamException too.
-            
             var got_request  = false;
             var got_response = false;
             
@@ -39,19 +37,30 @@ namespace Caesura.LibNetwork.Tests
             Exception? server1_exception = null;
             Exception? server2_exception = null;
             
+            const bool thread_per_connection = true;
+            const int interval = 15;
+            
             var config1 = new LibNetworkConfig()
             {
                 Port = 1,
+                Http = new HttpConfig()
+                {
+                    ThreadPerConnection = thread_per_connection,
+                    ConnectionLoopMillisecondDelayInterval = interval,
+                }
             };
-            //config1.Http.ThreadPerConnection = false;
             var mock_session_factory1 = new MockTcpSessionFactory(config1);
             config1.Factories.TcpSessionFactoryFactory = _ => mock_session_factory1;
             
             var config2 = new LibNetworkConfig()
             {
                 Port = 2,
+                Http = new HttpConfig()
+                {
+                    ThreadPerConnection = thread_per_connection,
+                    ConnectionLoopMillisecondDelayInterval = interval,
+                }
             };
-            //config2.Http.ThreadPerConnection = false;
             var mock_session_factory2 = new MockTcpSessionFactory(config2);
             config2.Factories.TcpSessionFactoryFactory = _ => mock_session_factory2;
             
@@ -78,7 +87,6 @@ namespace Caesura.LibNetwork.Tests
                             {
                                 new HttpHeader("Accept-Language", "en-US"),
                                 new HttpHeader("Host", "localhost:2"),
-                                new HttpHeader("User-Agent", "Solace NT"),
                             },
                             new HttpBody(
                                 "{\r\n    \"message\": \"hello back to you!\"\r\n}"
@@ -110,7 +118,6 @@ namespace Caesura.LibNetwork.Tests
                 new HttpMessage(
                     new HttpHeaders()
                     {
-                        new HttpHeader("Accept-Language", "en-US"),
                         new HttpHeader("User-Agent", "Solace NT"),
                     },
                     new HttpBody(
@@ -119,7 +126,7 @@ namespace Caesura.LibNetwork.Tests
                 )
             );
             var stream1 = new MemoryStream();
-            mock_session_factory1.SimulateConnection(stream1, port: 2);
+            await mock_session_factory2.SimulateConnection(stream1, port: 1);
             var session1 = await server1.SendRequest("localhost", 2, request1);
             
             session1.OnUnhandledException += e => { server1_exception = e; server1_err_spot = 5; return Task.CompletedTask; };

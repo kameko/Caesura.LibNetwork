@@ -11,7 +11,7 @@ namespace Caesura.LibNetwork.Tests
     {
         private MemoryStream _memstream;
         private StreamWriter _writer;
-        private bool available;
+        private bool data_available;
         
         public Guid Id { get; private set; }
         public TcpSessionState State { get; private set; }
@@ -20,9 +20,9 @@ namespace Caesura.LibNetwork.Tests
         {
             get
             {
-                var a = available;
-                available = false;
-                return available;
+                var da = data_available;
+                data_available = false;
+                return da;
             }
         }
         
@@ -30,7 +30,7 @@ namespace Caesura.LibNetwork.Tests
         {
             _memstream     = memstream;
             _writer        = new StreamWriter(memstream, Encoding.UTF8);
-            available      = false;
+            data_available = false;
             
             Id             = Guid.NewGuid();
             State          = TcpSessionState.Ready;
@@ -48,7 +48,7 @@ namespace Caesura.LibNetwork.Tests
             await _writer.WriteAsync(text);
             await _writer.FlushAsync();
             _memstream.Position = 0;
-            available = true;
+            data_available = true;
         }
         
         public void Close()

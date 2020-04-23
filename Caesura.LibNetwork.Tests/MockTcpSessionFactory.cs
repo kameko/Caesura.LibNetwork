@@ -23,10 +23,21 @@ namespace Caesura.LibNetwork.Tests
             streams = new Dictionary<int, MemoryStream>();
         }
         
-        public void SimulateConnection(MemoryStream stream, int port)
+        public async Task SimulateConnection(MemoryStream stream, int port)
         {
             simulated_stream = stream;
             simulated_port   = port;
+            
+            var count = 30;
+            while (simulated_port > 0)
+            {
+                count--;
+                await Task.Delay(100);
+                if (count <= 0)
+                {
+                    throw new InvalidOperationException("TEST: Gave up waiting for simulated connection.");
+                }
+            }
         }
         
         public bool Pending()
@@ -43,13 +54,17 @@ namespace Caesura.LibNetwork.Tests
                     return TcpSessionFactory.Empty;
                 }
                 
-                await Task.Delay(15, token);
+                await Task.Delay(15);
             }
             
-            var session = new MockTcpSession(simulated_stream!, Config.TcpConnectionTimeoutTicks);
-            streams.Add(simulated_port, simulated_stream!);
-            
+            var sm = simulated_stream!;
+            var sp = simulated_port;
             simulated_stream = null;
+            simulated_port = -1;
+            
+            var session = new MockTcpSession(sm, Config.TcpConnectionTimeoutTicks);
+            streams.Add(sp, sm);
+            
             return session;
         }
         
@@ -59,17 +74,17 @@ namespace Caesura.LibNetwork.Tests
         private ITcpSession ConnectSync(string host, int port)
         {
             var remove_mes = new List<int>();
-            MemoryStream? stream = null;
-            foreach (var stream_kvp in streams)
+            MemoryStream? mstream = null;
+            foreach (var (id, stream) in streams)
             {
-                if (!stream_kvp.Value.CanRead)
+                if (!stream.CanRead)
                 {
-                    remove_mes.Add(stream_kvp.Key);
+                    remove_mes.Add(id);
                     continue;
                 }
-                if (stream_kvp.Key == port)
+                if (id == port)
                 {
-                    stream = stream_kvp.Value;
+                    mstream = stream;
                 }
             }
             foreach (var remove in remove_mes)
@@ -77,13 +92,13 @@ namespace Caesura.LibNetwork.Tests
                 streams.Remove(remove);
             }
             
-            if (stream is null)
+            if (mstream is null)
             {
-                stream = new MemoryStream();
-                streams.Add(port, stream);
+                mstream = new MemoryStream();
+                streams.Add(port, mstream);
             }
             
-            var session = new MockTcpSession(stream, Config.TcpConnectionTimeoutTicks);
+            var session = new MockTcpSession(mstream, Config.TcpConnectionTimeoutTicks);
             return session;
         }
         
