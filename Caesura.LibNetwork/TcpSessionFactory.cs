@@ -17,8 +17,23 @@ namespace Caesura.LibNetwork
             listener = new TcpListener(config.IP, config.Port);
         }
         
-        public ITcpSession AcceptTcpConnection(CancellationToken token)
+        public bool Pending()
         {
+            return listener.Pending();
+        }
+        
+        public async Task<ITcpSession> AcceptTcpConnection(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested && !Pending())
+            {
+                if (token.IsCancellationRequested)
+                {
+                    return TcpSession.Empty;
+                }
+                
+                await Task.Delay(15, token);
+            }
+            
             var client  = listener.AcceptTcpClient();
             var session = new TcpSession(client, Config.ConnectionTimeoutTicks);
             return session;

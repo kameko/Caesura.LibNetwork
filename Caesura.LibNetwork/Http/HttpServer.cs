@@ -36,7 +36,7 @@ namespace Caesura.LibNetwork.Http
             ValidateStart();
             
             SessionFactory.Start();
-            await GetAllSubsystemTasks();
+            await StartAllSubsystemTasks();
         }
         
         public void Start()
@@ -96,7 +96,7 @@ namespace Caesura.LibNetwork.Http
             }
         }
         
-        private Task GetAllSubsystemTasks()
+        private Task StartAllSubsystemTasks()
         {
             return Task.WhenAll(
                 Task.Run(ConnectionWaiter),
@@ -131,7 +131,7 @@ namespace Caesura.LibNetwork.Http
             var token = Canceller!.Token;
             while (!token.IsCancellationRequested)
             {
-                if (Sessions.Count > Config.MaxConnections)
+                if (Sessions.Count > Config.MaxConnections || !SessionFactory.Pending())
                 {
                     await Task.Delay(15);
                     continue;
@@ -141,8 +141,15 @@ namespace Caesura.LibNetwork.Http
                 IHttpSession? http_session = null;
                 try
                 {
-                    tcp_session  = SessionFactory.AcceptTcpConnection(token);
-                    http_session = AddSession(tcp_session);
+                    tcp_session = await SessionFactory.AcceptTcpConnection(token);
+                    if (!token.IsCancellationRequested)
+                    {
+                        http_session = AddSession(tcp_session);
+                    }
+                    else
+                    {
+                        tcp_session.Close();
+                    }
                 }
                 catch (SocketException se)
                 {
@@ -179,6 +186,11 @@ namespace Caesura.LibNetwork.Http
             var remove_ids = new List<Guid>();
             while (!token.IsCancellationRequested)
             {
+                if (token.IsCancellationRequested)
+                {
+                    break;
+                }
+                
                 foreach (var session_kvp in Sessions)
                 {
                     if (token.IsCancellationRequested)
@@ -205,6 +217,7 @@ namespace Caesura.LibNetwork.Http
                     }
                     */
                 }
+                
                 if (remove_ids.Count > 0)
                 {
                     foreach (var id in remove_ids)
@@ -219,23 +232,28 @@ namespace Caesura.LibNetwork.Http
                     remove_ids.Clear();
                 }
                 
-                await Task.Delay(1);
+                await Task.Delay(15);
             }
         }
         
         private IHttpSession AddSession(ITcpSession tcp_session)
         {
             var http_session = Config.Http.Factories.HttpSessionFactory(Config, tcp_session, Canceller!.Token);
-            Sessions.GetOrAdd(http_session.Id, http_session);
-            return http_session;
+            return AddSession(http_session);
+        }
+        
+        private IHttpSession AddSession(IHttpSession http_session)
+        {
+            var ret = Sessions.GetOrAdd(http_session.Id, http_session);
+            return ret;
         }
         
         private IHttpSession? RemoveSession(IHttpSession session) => RemoveSession(session.Id);
         
         private IHttpSession? RemoveSession(Guid id)
         {
-            Sessions.TryRemove(id, out var ret);
-            return ret;
+            var r = Sessions.TryRemove(id, out var ret);
+            return r ? ret : null;
         }
         
         private bool RemoveSessionAndClose(IHttpSession? session)

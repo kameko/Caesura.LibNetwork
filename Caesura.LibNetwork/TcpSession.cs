@@ -10,6 +10,8 @@ namespace Caesura.LibNetwork
     
     internal class TcpSession : ITcpSession
     {
+        public static TcpSession Empty => new TcpSession();
+        
         private int _starter_ticks;
         private TcpClient _client;
         private StreamWriter _writer;
@@ -28,6 +30,17 @@ namespace Caesura.LibNetwork
             State          = TcpSessionState.Ready;
             Id             = Guid.NewGuid();
             Output         = new StreamReader(_client.GetStream(), Encoding.UTF8);
+        }
+        
+        private TcpSession()
+        {
+            _starter_ticks = 0;
+            _client        = null!;
+            _writer        = null!;
+            TicksLeft      = 0;
+            State          = TcpSessionState.Closed;
+            Id             = Guid.NewGuid();
+            Output         = null!;
         }
         
         public async Task Write(string text, CancellationToken token)
@@ -53,8 +66,8 @@ namespace Caesura.LibNetwork
         public void Close()
         {
             State = TcpSessionState.Closed;
-            _client.Close();
-            Output.Close();
+            _client?.Close();
+            Output?.Close();
         }
         
         private void CalculateTicks()

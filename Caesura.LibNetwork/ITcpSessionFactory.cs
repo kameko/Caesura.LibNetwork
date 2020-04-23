@@ -7,7 +7,8 @@ namespace Caesura.LibNetwork
     
     public interface ITcpSessionFactory : IDisposable
     {
-        ITcpSession AcceptTcpConnection(CancellationToken token);
+        bool Pending();
+        Task<ITcpSession> AcceptTcpConnection(CancellationToken token);
         Task<ITcpSession> Connect(string host, int port);
         void Start();
         void Stop();

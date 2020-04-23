@@ -29,18 +29,36 @@ namespace Caesura.LibNetwork.Tests
             simulated_port   = port;
         }
         
-        public ITcpSession AcceptTcpConnection(CancellationToken token)
+        public bool Pending()
         {
+            throw new NotImplementedException();
+        }
+        
+        public Task<ITcpSession> AcceptTcpConnection(CancellationToken token)
+        {
+            throw new NotImplementedException();
+            /*
             while (simulated_stream is null)
             {
-                Thread.Sleep(15);
+                await Task.Delay(15, token);
             }
             var stream = simulated_stream;
             simulated_stream = null;
             
+            while (!token.IsCancellationRequested && !Pending())
+            {
+                if (token.IsCancellationRequested)
+                {
+                    // TODO: return a closed session.
+                }
+                
+                await Task.Delay(15, token);
+            }
+            
             var session = new MockTcpSession(stream, Config.ConnectionTimeoutTicks);
             streams.Add(simulated_port, stream);
             return session;
+            */
         }
         
         public Task<ITcpSession> Connect(string host, int port) =>
