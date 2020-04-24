@@ -38,6 +38,7 @@ namespace Caesura.LibNetwork.Http
         
         public async Task StartAsync()
         {
+            Config.DebugLog($"Starting HTTP server for {Config.IP} at port {Config.Port}.");
             ValidateStart();
             
             SessionFactory.Start();
@@ -51,6 +52,7 @@ namespace Caesura.LibNetwork.Http
         
         public void Stop()
         {
+            Config.DebugLog($"Stopping HTTP server for {Config.IP} at port {Config.Port}.");
             if (Canceller is null)
             {
                 throw new InvalidOperationException("HTTP server has not been started yet.");
@@ -65,6 +67,7 @@ namespace Caesura.LibNetwork.Http
             
             if (!Config.Http.ThreadPerConnection)
             {
+                Config.DebugLog("Stopping all sessions.");
                 foreach (var (id, session) in Sessions)
                 {
                     session.Close();
@@ -80,6 +83,7 @@ namespace Caesura.LibNetwork.Http
         
         private async Task<IHttpSession> SendRequestInternal(string host, int port, IHttpRequest? request)
         {
+            Config.DebugLog($"Sending request: {request?.ToString() ?? "<NULL>"}");
             ValidateRuntime();
             
             IHttpSession? http_session = null;
@@ -181,6 +185,7 @@ namespace Caesura.LibNetwork.Http
                 try
                 {
                     tcp_session = await SessionFactory.AcceptTcpConnection(token);
+                    Config.DebugLog($"Got TCP session for {Config.IP} at port {Config.Port}.");
                     if (token.IsCancellationRequested)
                     {
                         tcp_session.Close();

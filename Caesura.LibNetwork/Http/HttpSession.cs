@@ -93,6 +93,7 @@ namespace Caesura.LibNetwork.Http
         
         public Task Start(int delay, CancellationToken token)
         {
+            _config.DebugLog($"Starting HTTP session for {_config.IP} at port {_config.Port}.");
             return Task.Run(async () =>
             {
                 while (!token.IsCancellationRequested && !_closed)
@@ -138,6 +139,7 @@ namespace Caesura.LibNetwork.Http
             if (_session.DataAvailable)
             {
                 last_response_time = new TimeSpan(DateTime.UtcNow.Ticks);
+                _config.DebugLog($"Data available at {last_response_time}.");
                 await HandleSession(_session);
             }
             else
@@ -183,6 +185,8 @@ namespace Caesura.LibNetwork.Http
         {
             var request          = _config.Http.Factories.HttpRequestFactory(_config, session.Output, _canceller.Token);
             var response_session = this;
+            
+            _config.DebugLog($"GOT {(request.IsValid ? "VALID" : "INVALID")} REQUEST: {request}.");
             
             if (request.IsValid)
             {

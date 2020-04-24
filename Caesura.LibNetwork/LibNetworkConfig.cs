@@ -5,10 +5,12 @@ namespace Caesura.LibNetwork
     using System.IO;
     using System.Threading;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using Http;
     
     public class LibNetworkConfig
     {
+        public Action<string> DebugLog { get; set; }
         public LibNetworkFactories Factories { get; set; }
         public HttpConfig Http { get; set; }
         public IPAddress IP { get; set; }
@@ -18,6 +20,7 @@ namespace Caesura.LibNetwork
         
         public LibNetworkConfig()
         {
+            DebugLog                  = (msg) => Console.WriteLine($"LibNetwork: {msg}");
             Factories                 = LibNetworkFactories.GetDefault();
             Http                      = HttpConfig.GetDefault();
             IP                        = IPAddress.Any;
